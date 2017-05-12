@@ -15,4 +15,9 @@ HEADERS += \
     tree/sinus_generator.h \
     tree/tree_node.h \
     tree/widget.h \
-    serializer.h
+    serializer.h \
+    device.h \
+    pseudodevice.h \
+    server.h \
+    client.h \
+    package.h
