@@ -6,6 +6,8 @@ class pseudodevice : public device
 {
 	pseudodevice *other;
 
+	package in;
+
 public:
 	/*constructor*/			pseudodevice				()
 	{
@@ -28,13 +30,34 @@ public:
 		other = dev;
 	}
 
+	void					accept						(const package &p)
+	{
+		in = p;
+		if(listener != NULL)
+		{
+			listener->data(p);
+		}
+	}
+
 	bool					write						(const package_t &p)
 	{
-		if(other && other->listener)
+		if(other)
 		{
-			other->listener->data(p);
+			other->accept(p);
 			return true;
 		}
 		return false;
+	}
+
+	bool					send						(package_t req, package_t &resp)
+	{
+		req.set_msgid(0);
+		bool res = write(req);
+		if(res == false)
+		{
+			return false;
+		}
+		resp = in;
+		return true;
 	}
 };

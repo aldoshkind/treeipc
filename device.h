@@ -12,7 +12,10 @@ enum CMD
 {
 	CMD_AT = 1,
 	CMD_AT_SUCCESS = 2,
-	CMD_AT_ERROR = 3
+	CMD_AT_ERROR = 3,
+	CMD_LS = 4,
+	CMD_LS_SUCCESS = 5,
+	CMD_LS_ERROR = 6
 };
 
 class package : private std::vector<uint8_t>
@@ -22,16 +25,17 @@ class package : private std::vector<uint8_t>
 	nid_t						*nid;
 	cmd_t						*cmd;
 	msgid_t						*msgid;
+	size_type					header_size;
 
 	void						reset_header		()
 	{
 		nid = (nid_t *)&(*begin());
 		cmd = (cmd_t *)(nid + 1);
 		msgid = (msgid_t *)(cmd + 1);
+		header_size = (uint8_t *)(msgid + 1) - (uint8_t *)nid;
 	}
 
-public:
-	/*constructor*/				package				()
+	void						init				()
 	{
 		extend_by(sizeof(*nid));
 		extend_by(sizeof(*cmd));
@@ -39,9 +43,31 @@ public:
 		reset_header();
 	}
 
+public:
+	/*constructor*/				package				()
+	{
+		init();
+	}
+
+	/*constructor*/				package				(const package &p) : base_t(p)
+	{
+		init();
+		*cmd = p.get_cmd();
+		*nid = p.get_nid();
+		*msgid = p.get_msgid();
+	}
+
 	/*destructor*/				~package			()
 	{
 		//
+	}
+
+	package						get_resp			()
+	{
+		package resp;
+		resp.set_cmd(get_cmd());
+		resp.set_msgid(get_msgid());
+		resp.set_nid(get_nid());
 	}
 
 	void						extend_by			(size_type amount)
@@ -58,8 +84,9 @@ public:
 
 	void append(const void *data, int sz)
 	{
+		size_type pos = size();
 		extend_by(sz);
-		memcpy(&(*begin()), data, sz);
+		memcpy(&(*(begin() + pos)), data, sz);
 	}
 
 	template <class type>
@@ -72,6 +99,7 @@ public:
 
 	bool read(size_type pos, void *dest, size_type sz) const
 	{
+		pos += header_size;
 		if(pos + sz > size())
 		{
 			return false;
@@ -147,6 +175,7 @@ public:
 	};
 
 	virtual bool				write				(const package_t &p) = 0;
+	virtual bool				send				(package_t req, package_t &resp) = 0;		// blocks
 
 	data_listener			*listener;
 };

@@ -16,68 +16,16 @@ class client : public node, public device::data_listener
 
 		switch(p.get_cmd())
 		{
-		case 'r':
-			{
-				int pos = 1;
-				ls_rep.resize(p.read<uint32_t>(pos));
-				pos += sizeof(ls_list_t::size_type);
-				for(int i = 0 ; i < ls_rep.size() ; i += 1)
-				{
-					std::string::size_type st = p.read<uint32_t>(pos);
-					pos += sizeof(std::string::size_type);
-					std::string str;
-					str.resize(st);
-					p.read(pos, (void *)str.c_str(), st);
-					pos += st;
-					ls_rep[i] = str;
-				}
-			}
-		break;
-		case 'a':
-			{
-				int pos = 1;
-				std::string::size_type st = p.read<uint32_t>(pos);
-				pos += sizeof(std::string::size_type);
-				std::string str;
-				str.resize(st);
-				p.read(pos, (void *)str.c_str(), st);
-				generate(str);
-				printf("generate %s\n", str.c_str());
-			}
-		break;
-		case 'h':
-			{
-				int pos = 1;
-				get_rep = p.read<uint32_t>(pos);
-				pos += sizeof(uint32_t);
-				uint32_t prop_count = p.read<uint32_t>(pos);
-				pos += sizeof(uint32_t);
-				props_t props;
-				for(int i = 0 ; i < prop_count ; i += 1)
-				{
-					std::string type, name;
-					read_string(p, type, pos);
-					pos += type.size() + sizeof(uint32_t);
-					read_string(p, name, pos);
-					pos += name.size() + sizeof(uint32_t);
-					props.push_back(new property_value<double>(name));
-				}
-				get_rep_props = props;
-			}
-		break;
 		default:
 		break;
 		}
 	}
 
-	ls_list_t				ls_rep;
-
 	device					*dev;
 
-	typedef uint64_t		nid_t;
+	nid_t					nid;
 
 	nid_t					get_rep;
-	props_t					get_rep_props;
 
 	node					*create				(std::string path)
 	{
@@ -96,6 +44,7 @@ public:
 	/*constructor*/			client				()
 	{
 		dev = NULL;
+		nid = 0;
 	}
 
 	/*destructor*/			~client				()
@@ -115,14 +64,32 @@ public:
 			return ls_list_t();
 		}
 
-		device::package_t pack;
-		pack.set_cmd('l');
+		device::package_t req;
+		req.set_cmd(CMD_LS);
+		req.set_nid(nid);
 
-		dev->write(pack);
+		device::package_t rep;
+		dev->send(req, rep);
 
-		// тут ожидание ответа
+		if(rep.get_cmd() != CMD_LS_SUCCESS)
+		{
+			return ls_list_t();
+		}
 
-		return ls_rep;
+		ls_list_t res;
+
+		int pos = 0;
+		uint32_t count = rep.read<uint32_t>(pos);
+		pos += sizeof(uint32_t);
+		res.reserve(count);
+		for(int i = 0 ; i < count ; i += 1)
+		{
+			std::string name;
+			pos = read_string(rep, name, pos);
+			res.push_back(name);
+		}
+
+		return res;
 	}
 
 	node					*at				(std::string path)
@@ -138,15 +105,14 @@ public:
 			return NULL;
 		}
 
-		device::package_t pack;
-		pack.set_cmd('g');
-		append_string(pack, path);
+		device::package_t req, rep;
+		req.set_cmd(CMD_AT);
+		req.set_nid(nid);
+		append_string(req, path);
 
-		dev->write(pack);
+		dev->send(req, rep);
 
-		// ожидание ответа
-
-		if(get_rep == 0)
+		if(rep.get_cmd() == CMD_AT_ERROR)
 		{
 			return NULL;
 		}
@@ -155,9 +121,18 @@ public:
 
 		if(n != NULL)
 		{
-			for(auto prop : get_rep_props)
+			int pos = 0;
+			int prop_count = rep.read<uint16_t>(pos);
+			pos += sizeof(uint16_t);
+
+			for(int i = 0 ; i < prop_count ; i += 1)
 			{
-				n->add_property(prop);
+				std::string type;
+				pos = read_string(rep, type, pos);
+				std::string name;
+				pos = read_string(rep, name, pos);
+
+				n->add_property(new property_value<double>(name));
 			}
 		}
 

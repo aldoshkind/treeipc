@@ -7,130 +7,33 @@
 
 #include "package.h"
 
-class tracker : public node::listener_t, resource::new_property_listener, public property_listener
-{
-	device						*dev;
-	nid_t						nid;
-	node						*target;
-
-public:
-	/*constructor*/				tracker				(node *n)
-	{
-		target = n;
-	}
-
-	/*destructor*/				~tracker			()
-	{
-		//
-	}
-
-	void						set_device			(device *d)
-	{
-		dev = d;
-	}
-
-	void						set_nid				(nid_t n)
-	{
-		nid = n;
-	}
-
-	node						*get_node			() const
-	{
-		return target;
-	}
-
-	void						process				(const device::package_t &p)
-	{
-		if(p.size() < 1)
-		{
-			return;
-		}
-
-		switch(p.get_cmd())
-		{
-		case 'l':
-			if(dev != NULL)
-			{
-				device::package_t pack;
-				pack.set_cmd('r');
-				node::ls_list_t items = target->ls();
-
-				pack.append<uint32_t>(items.size());
-
-				for(auto item : items)
-				{
-					append_string(pack, item);
-				}
-				dev->write(pack);
-			}
-		break;
-		case 'g':
-			if(dev != NULL)
-			{
-				device::package_t pack;
-				pack.set_cmd('h');
-				std::string path;
-				read_string(p, path, 1);
-				node *n = target->at(path);
-
-				static uint32_t id = 1;
-
-				if(n == NULL)
-				{
-					pack.append<uint32_t>(0);
-				}
-				else
-				{
-					/*nodes_by_id[id] = n;
-					ids_by_node[n] = id;
-					append(pack, id);
-
-					props_t props = n->get_properties();
-
-					append<uint32_t>(pack, props.size());
-					for(auto prop : props)
-					{
-						append_string(pack, prop->get_type());
-						append_string(pack, prop->get_name());
-					}*/
-				}
-
-				id += 1;
-				dev->write(pack);
-			}
-		break;
-		default:
-		break;
-		}
-	}
-};
-
 class server : public device::data_listener
 {
-	typedef std::map<nid_t, tracker *>		trackers_t;
-	trackers_t								trackers;
+	typedef std::map<nid_t, node *>		tracked_t;
+	tracked_t							tracked;
 
-	tracker					*get_tracker	(nid_t nid)
+	node					*get_node	(nid_t nid)
 	{
-		trackers_t::iterator it = trackers.find(nid);
-		return (it == trackers.end()) ? NULL : it->second;
+		tracked_t::iterator it = tracked.find(nid);
+		return (it == tracked.end()) ? NULL : it->second;
 	}
 
-	tracker					*get_tracker	(node *n)
+	nid_t					get_nid	(node *n)
 	{
-		for(trackers_t::iterator it = trackers.begin() ; it != trackers.end() ; ++it)
+		for(tracked_t::iterator it = tracked.begin() ; it != tracked.end() ; ++it)
 		{
-			if(it->second->get_node() == n)
+			if(it->second == n)
 			{
-				return it->second;
+				return it->first;
 			}
 		}
+		return do_track(n);
 	}
 
 	void					cmd_at			(const device::package_t &p)
 	{
 		nid_t nid = p.get_nid();
-		tracker *t = get_tracker(nid);
+		node *t = get_node(nid);
 		device::package_t resp;
 		if(t == NULL)
 		{
@@ -140,10 +43,60 @@ class server : public device::data_listener
 		}
 		else
 		{
-			node *n = t->at(p);
-			tracker *tt = get_tracker(n); // tt = target tracker
-			if()
+			std::string path;
+			read_string(p, path);
+
+			node *n = t->at(path);
+
+			if(n == NULL)
+			{
+				resp.set_cmd(CMD_AT_ERROR);
+				resp.set_msgid(p.get_msgid());
+				resp.set_nid(p.get_nid());
+			}
+
+			nid_t nid = get_nid(n); // tt = target tracker
+			resp.set_cmd(CMD_AT_SUCCESS);
+			resp.set_msgid(p.get_msgid());
+			resp.set_nid(nid);
+
+			node::props_t props = n->get_properties();
+			resp.append<uint16_t>(props.size());
+			for(auto prop : props)
+			{
+				append_string(resp, prop->get_type());
+				append_string(resp, prop->get_name());
+			}
 		}
+		dev->write(resp);
+	}
+
+	void					cmd_ls				(const device::package_t &p)
+	{
+		nid_t nid = p.get_nid();
+		node *t = get_node(nid);
+		device::package_t resp;
+		if(t == NULL)
+		{
+			resp.set_cmd(CMD_LS_ERROR);
+			resp.set_msgid(p.get_msgid());
+			resp.set_nid(p.get_nid());
+		}
+		else
+		{
+			node::ls_list_t list = t->ls();
+
+			resp.set_cmd(CMD_LS_SUCCESS);
+			resp.set_msgid(p.get_msgid());
+			resp.set_nid(nid);
+
+			resp.append<uint32_t>(list.size());
+			for(auto item : list)
+			{
+				append_string(resp, item);
+			}
+		}
+		dev->write(resp);
 	}
 
 	void					data				(const device::package_t &p)
@@ -152,7 +105,9 @@ class server : public device::data_listener
 		{
 		case CMD_AT:
 			cmd_at(p);
-
+		break;
+		case CMD_LS:
+			cmd_ls(p);
 		break;
 		default:
 		break;
@@ -194,11 +149,11 @@ class server : public device::data_listener
 		return current_nid++;
 	}
 
-	void					do_track			(node *n)
+	nid_t					do_track			(node *n)
 	{
-		tracker *tr = new tracker(t);
-		tr->set_nid(generate_nid());
-		trackers[nid] = t;
+		nid_t nid = generate_nid();
+		tracked[nid] = n;
+		return nid;
 	}
 
 	void					untrack				(node */*n*/)
@@ -211,7 +166,7 @@ public:
 	{
 		dev = NULL;
 		target = NULL;
-		current_nid = 1;
+		current_nid = 0;
 	}
 
 	/*destructor*/			~server				()
