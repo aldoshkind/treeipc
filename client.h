@@ -5,24 +5,8 @@
 
 #include "package.h"
 
-class client : public node, public device::data_listener
+class fake_node : public node
 {
-	void					data				(const device::package_t &p)
-	{
-		if(p.size() < 1)
-		{
-			return;
-		}
-
-		switch(p.get_cmd())
-		{
-		default:
-		break;
-		}
-	}
-
-	device					*dev;
-
 	nid_t					nid;
 
 	nid_t					get_rep;
@@ -35,19 +19,19 @@ class client : public node, public device::data_listener
 	using node::generate;
 	node					*generate			()
 	{
-		client *c = new client;
+		fake_node *c = new fake_node;
 		c->set_parent(this);
 		return c;
 	}
 
 public:
-	/*constructor*/			client				()
+	/*constructor*/			fake_node				()
 	{
 		dev = NULL;
 		nid = 0;
 	}
 
-	/*destructor*/			~client				()
+	/*destructor*/			~fake_node				()
 	{
 		//
 	}
@@ -138,4 +122,38 @@ public:
 
 		return n;
 	}
+};
+
+
+class client : public device::data_listener
+{
+	device					*dev;
+
+	void					data				(const device::package_t &p)
+	{
+		if(p.size() < 1)
+		{
+			return;
+		}
+
+		switch(p.get_cmd())
+		{
+		default:
+		break;
+		}
+	}
+
+public:
+	/*constructor*/			client					()
+	{
+		dev = NULL;
+		nid = 0;
+	}
+
+	/*destructor*/			~client					()
+	{
+		//
+	}
+
+
 };

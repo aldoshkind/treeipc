@@ -21,7 +21,7 @@ int main()
 	node root_srv;
 	root_srv.generate("test");
 
-	client cl;
+	fake_node cl;
 	server srv;
 
 	cl.set_device(&pd1);
