@@ -5,7 +5,11 @@ CONFIG -= qt
 
 SOURCES += main.cpp \
     tree/filepath_utils.cpp \
-    tree/resource.cpp
+    tree/resource.cpp \
+    client_node.cpp \
+    server.cpp \
+    client.cpp \
+    package.cpp
 
 HEADERS += \
     tree/event_printer.h \
@@ -15,9 +19,10 @@ HEADERS += \
     tree/sinus_generator.h \
     tree/tree_node.h \
     tree/widget.h \
-    serializer.h \
     device.h \
     pseudodevice.h \
     server.h \
     client.h \
-    package.h
+    package.h \
+    client_node.h \
+    property_serializer.h

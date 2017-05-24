@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <memory.h>
 
 #include <vector>
 
@@ -15,7 +16,8 @@ enum CMD
 	CMD_AT_ERROR = 3,
 	CMD_LS = 4,
 	CMD_LS_SUCCESS = 5,
-	CMD_LS_ERROR = 6
+	CMD_LS_ERROR = 6,
+	CMD_NEW_PROP = 7,
 };
 
 class package : private std::vector<uint8_t>
@@ -62,12 +64,26 @@ public:
 		//
 	}
 
+	const package				&operator =			(const package op)
+	{
+		resize(op.size());
+		memcpy(&(*begin()), &(op[0]), size());
+		reset_header();
+		set_nid(op.get_nid());
+		set_cmd(op.get_cmd());
+		set_msgid(op.get_msgid());
+
+		return *this;
+	}
+
 	package						get_resp			()
 	{
 		package resp;
 		resp.set_cmd(get_cmd());
 		resp.set_msgid(get_msgid());
 		resp.set_nid(get_nid());
+
+		return resp;
 	}
 
 	void						extend_by			(size_type amount)
@@ -174,8 +190,8 @@ public:
 		virtual void					data						(const package_t &p) = 0;
 	};
 
-	virtual bool				write				(const package_t &p) = 0;
-	virtual bool				send				(package_t req, package_t &resp) = 0;		// blocks
+	virtual bool				write				(const package_t &p) = 0;					// just writes package to device
+	virtual bool				send				(package_t req, package_t &resp) = 0;		// blocks and waits for response
 
 	data_listener			*listener;
 };

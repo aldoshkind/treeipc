@@ -10,6 +10,8 @@
 #include "client.h"
 #include "server.h"
 
+#include "property_serializer.h"
+
 using namespace std;
 
 int main()
@@ -21,7 +23,7 @@ int main()
 	node root_srv;
 	root_srv.generate("test");
 
-	fake_node cl;
+	client cl;
 	server srv;
 
 	cl.set_device(&pd1);
@@ -41,19 +43,29 @@ int main()
 	d->add_property(new property_value<double>("prop_test0"));
 	d->add_property(new property_value<double>("prop_test1"));
 
-	root_cl.attach("cl", &cl, false);
 
-	node *n = cl.at("a/b/c/d");
+
+	node *cl_root = cl.get_root();
+
+	node *n = cl_root->at("a/b/c/d");
 	printf("at: %08x %s\n", n, n->get_path().c_str());
 	for(auto prop : n->get_properties())
 	{
 		printf("%s %s\n", prop->get_type().c_str(), prop->get_name().c_str());
 	}
 
-	for(auto entry : cl.ls())
+	printf("\n");
+
+	for(auto entry : cl_root->ls())
 	{
 		printf("%s\n", entry.c_str());
 	}
+
+	serializer_machine m;
+	serializer::buffer_t buf = m.serialize(7.0f);
+
+	float f;
+	m.deserialize(buf, f);
 
 	return 0;
 }
