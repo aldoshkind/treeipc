@@ -1,6 +1,6 @@
 #include "client.h"
 
-/*constructor*/ client::client()
+/*constructor*/ client::client() : generator(this)
 {
 	dev = NULL;
 	root_node = NULL;
@@ -78,13 +78,24 @@ void client::process_new_property(const device::package_t &p)
 
 	std::string type;
 	std::string name;
-	int pos = read_string(p, type);
+
+	int pos = 0;
+	prid_t prid = p.read<prid_t>(pos);
+	pos += sizeof(prid);
+	pos = read_string(p, type, pos);
 	read_string(p, name, pos);
 	printf("new prop %s %s\n", type.c_str(), name.c_str());
 
 	node *n = it->second;
 
 	property_base *prop = generate_property(type, name);
+	property_fake *pf = dynamic_cast<property_fake *>(prop);
+	if(pf != NULL)
+	{
+		pf->set_prid(prid);
+	}
+
+	props[prid] = prop;
 
 	if(prop == NULL)
 	{
@@ -132,15 +143,15 @@ client_node::ls_list_t client::ls(nid_t nid)
 
 int property_generator::init_property_factories()
 {
-	property_factories["std::string"] = new property_factory<std::string>;
-	property_factories[typeid(double).name()] = new property_factory<double>;
-	property_factories[typeid(int).name()] = new property_factory<int>;
+	property_factories["std::string"] = new fake_property_factory<std::string>(cl);
+	property_factories[typeid(double).name()] = new fake_property_factory<double>(cl);
+	property_factories[typeid(int).name()] = new fake_property_factory<int>(cl);
 
 	return 0;
 }
 
 
-/*constructor*/ property_generator::property_generator()
+/*constructor*/ property_generator::property_generator(client *c) : cl(c)
 {
 	init_property_factories();
 }
@@ -159,4 +170,40 @@ property_base *property_generator::generate(std::string type, std::string name)
 	}
 
 	return it->second->generate(name);
+}
+
+void client::update_prop(prid_t prid)
+{
+	device::package_t req, rep;
+
+	req.set_prid(prid);
+	req.set_cmd(CMD_PROP_UPDATE);
+
+	dev->send(req, rep);
+
+	props_t::iterator it = props.find(prid);
+	if(it == props.end())
+	{
+		return;
+	}
+
+	uint32_t sz = rep.read<uint32_t>(0);
+	serializer_base::buffer_t buf;
+	buf.resize(sz);
+	rep.read(sizeof(sz), &(buf[0]), sz);
+
+	property_fake *pvf = dynamic_cast<property_fake *>(it->second);
+	if(pvf != NULL)
+	{
+		pvf->set_deserialization(true);
+	}
+
+	serializer.deserialize(buf, it->second);
+
+	if(pvf != NULL)
+	{
+		pvf->set_deserialization(false);
+	}
+
+	return;
 }

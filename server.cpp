@@ -5,6 +5,7 @@
 	dev = NULL;
 	target = NULL;
 	current_nid = 0;
+	current_prid = 0;
 }
 
 /*destructor*/ server::~server()
@@ -112,6 +113,9 @@ void server::data(const device::package_t &p)
 	case CMD_LS:
 		cmd_ls(p);
 	break;
+	case CMD_PROP_UPDATE:
+		cmd_get_prop(p);
+	break;
 	default:
 	break;
 	}
@@ -207,6 +211,10 @@ void server::new_property(resource *r, property_base *prop)
 		type = "std::string";
 	}
 
+	prid_t prid;
+	get_prid(prop, prid);
+
+	p.append(prid);
 	append_string(p, type);
 	append_string(p, prop->get_name());
 
@@ -218,4 +226,58 @@ nid_t server::get_nid(node *n)
 	nid_t nid;
 	get_nid(n, nid, true);
 	return nid;
+}
+
+bool server::get_prid(property_base *p, prid_t &prid)
+{
+	for(props_t::iterator it = props.begin() ; it != props.end() ; ++it)
+	{
+		if(it->second == p)
+		{
+			prid = it->first;
+			return true;
+		}
+	}
+
+	prid = generate_prid();
+	props[prid] = p;
+
+	return true;
+}
+
+prid_t server::generate_prid()
+{
+	return current_prid++;
+}
+
+void server::cmd_get_prop(const device::package_t &p)
+{
+	prid_t prid = p.get_prid();
+	property_base *prop = get_prop(prid);
+
+	device::package_t resp;
+	if(prop == NULL)
+	{
+		resp.set_cmd(CMD_PROP_UPDATE_ERROR);
+		resp.set_msgid(p.get_msgid());
+		resp.set_prid(p.get_prid());
+	}
+	else
+	{
+		serializer_base::buffer_t buf = serializer.serialize(prop);
+
+		resp.set_cmd(CMD_PROP_UPDATE_SUCCESS);
+		resp.set_msgid(p.get_msgid());
+		resp.set_prid(prid);
+
+		resp.append<uint32_t>(buf.size());
+		resp.append(&(buf[0]), buf.size());
+	}
+	dev->write(resp);
+}
+
+property_base *server::get_prop(prid_t prid)
+{
+	props_t::iterator it = props.find(prid);
+	return (it == props.end()) ? NULL : it->second;
 }

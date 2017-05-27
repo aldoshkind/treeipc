@@ -40,18 +40,31 @@ int main()
 	root_srv.generate("test/d");
 
 	node *d = root_srv.at("test/a/b/c/d");
-	d->add_property(new property_value<double>("prop_test0"));
-	d->add_property(new property_value<double>("prop_test1"));
+
+	property_value<double> *pvd0 = new property_value<double>("prop_test0");
+	property_value<double> *pvd1 = new property_value<double>("prop_test1");
+
+	pvd0->set_value(7);
+	pvd1->set_value(15);
+
+	d->add_property(pvd0);
+	d->add_property(pvd1);
 
 
 
 	node *cl_root = cl.get_root();
 
 	node *n = cl_root->at("a/b/c/d");
-	printf("at: %08x %s\n", n, n->get_path().c_str());
+	printf("at: %08x %s\n", (int)(int64_t)n, n->get_path().c_str());
 	for(auto prop : n->get_properties())
 	{
 		printf("%s %s\n", prop->get_type().c_str(), prop->get_name().c_str());
+
+		property<double> *pd = dynamic_cast<property<double> *>(prop);
+		if(pd != NULL)
+		{
+			printf("\t%f\n", pd->get_value());
+		}
 	}
 
 	printf("\n");
@@ -60,12 +73,6 @@ int main()
 	{
 		printf("%s\n", entry.c_str());
 	}
-
-	serializer_machine m;
-	serializer::buffer_t buf = m.serialize(7.0f);
-
-	float f;
-	m.deserialize(buf, f);
 
 	return 0;
 }

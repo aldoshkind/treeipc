@@ -6,17 +6,17 @@
 
 #include "tree/node.h"
 
-class serializer
+class serializer_base
 {
 public:
 	typedef std::vector<uint8_t>		buffer_t;
 
-	/*constructor*/				serializer				()
+	/*constructor*/				serializer_base				()
 	{
 		//
 	}
 
-	virtual /*destructor*/		~serializer				()
+	virtual /*destructor*/		~serializer_base				()
 	{
 		//
 	}
@@ -28,7 +28,7 @@ public:
 };
 
 template <class type>
-class serializer_plain : public serializer
+class serializer_plain : public serializer_base
 {
 public:
 	/*constructor*/				serializer_plain			()
@@ -77,6 +77,7 @@ public:
 
 		type val;
 		memcpy(&val, &buf[0], sizeof(val));
+		pd->set_value(val);
 		return true;
 	}
 
@@ -93,7 +94,7 @@ public:
 
 class serializer_machine
 {
-	typedef std::map<std::string, serializer *>		serializers_t;
+	typedef std::map<std::string, serializer_base *>		serializers_t;
 	serializers_t									serializers;
 
 	void						init						()
@@ -120,35 +121,35 @@ public:
 		serializers[typeid(type).name()] = new serializer_plain<type>;
 	}
 
-	void						add_serializer				(std::string type, serializer *s)
+	void						add_serializer				(std::string type, serializer_base *s)
 	{
 		serializers[type] = s;
 	}
 
-	serializer::buffer_t		serialize					(property_base *c)
+	serializer_base::buffer_t		serialize					(property_base *c)
 	{
 		serializers_t::iterator it = serializers.find(c->get_type());
 		if(it == serializers.end())
 		{
-			return serializer::buffer_t();
+			return serializer_base::buffer_t();
 		}
 		return it->second->serialize(c);
 	}
 
 	template <class type>
-	serializer::buffer_t		serialize					(type val)
+	serializer_base::buffer_t		serialize					(type val)
 	{
 		serializers_t::iterator it = serializers.find(typeid(type).name());
 		if(it == serializers.end())
 		{
-			return serializer::buffer_t();
+			return serializer_base::buffer_t();
 		}
 		return it->second->serialize(&val);
 	}
 
-	bool						deserialize					(const serializer::buffer_t &buf, property_base *c)
+	bool						deserialize					(const serializer_base::buffer_t &buf, property_base *c)
 	{
-		serializers_t::iterator it = serializers.find(typeid(c->get_type()).name());
+		serializers_t::iterator it = serializers.find(c->get_type());
 		if(it == serializers.end())
 		{
 			return false;
@@ -157,7 +158,7 @@ public:
 	}
 
 	template <class type>
-	bool						deserialize					(const serializer::buffer_t &buf, type &c)
+	bool						deserialize					(const serializer_base::buffer_t &buf, type &c)
 	{
 		serializers_t::iterator it = serializers.find(typeid(type).name());
 		if(it == serializers.end())

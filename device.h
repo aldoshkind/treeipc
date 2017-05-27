@@ -5,7 +5,9 @@
 
 #include <vector>
 
-typedef uint64_t	nid_t;
+typedef uint64_t	unique_id_t;			// unique id
+typedef unique_id_t		nid_t;			// node id
+typedef unique_id_t		prid_t;			// prop id
 typedef uint8_t		cmd_t;
 typedef uint32_t	msgid_t;
 
@@ -18,13 +20,20 @@ enum CMD
 	CMD_LS_SUCCESS = 5,
 	CMD_LS_ERROR = 6,
 	CMD_NEW_PROP = 7,
+	CMD_PROP_UPDATE = 8,
+	CMD_PROP_UPDATE_ERROR = 9,
+	CMD_PROP_UPDATE_SUCCESS = 10,
 };
 
 class package : private std::vector<uint8_t>
 {
 	typedef std::vector<uint8_t> base_t;
 
-	nid_t						*nid;
+	union
+	{
+		nid_t						*nid;
+		prid_t						*prid;
+	};
 	cmd_t						*cmd;
 	msgid_t						*msgid;
 	size_type					header_size;
@@ -131,6 +140,11 @@ public:
 		return *nid;
 	}
 
+	nid_t					get_prid					() const
+	{
+		return *prid;
+	}
+
 	cmd_t					get_cmd					() const
 	{
 		return *cmd;
@@ -149,6 +163,11 @@ public:
 	void					set_nid					(nid_t n)
 	{
 		*nid = n;
+	}
+
+	void					set_prid				(nid_t n)
+	{
+		*prid = n;
 	}
 
 	void					set_msgid				(msgid_t m)
@@ -195,3 +214,4 @@ public:
 
 	data_listener			*listener;
 };
+
