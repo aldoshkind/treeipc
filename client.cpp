@@ -207,3 +207,8 @@ void client::update_prop(prid_t prid)
 
 	return;
 }
+
+void property_fake::update_value() const
+{
+	cl->update_prop(get_prid());
+}

@@ -53,6 +53,8 @@ public:
 	{
 		return deserialization_in_process;
 	}
+
+	void					update_value				() const;
 };
 
 template <class type>
@@ -208,11 +210,9 @@ public:
 
 
 
-
-
 template <class type>
 type property_value_fake<type>::get_value() const
 {
-	cl->update_prop(get_prid());
+	update_value();
 	return base_t::get_value();
 }
