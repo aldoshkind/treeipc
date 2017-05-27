@@ -4,6 +4,8 @@
 #include <typeinfo>
 #include <map>
 
+#include <unistd.h>
+
 #include "tree/node.h"
 
 #include "pseudodevice.h"
@@ -13,6 +15,30 @@
 #include "property_serializer.h"
 
 using namespace std;
+
+class prop_change_printer : public property_listener
+{
+public:
+	/*constructor*/			prop_change_printer			()
+	{
+		//
+	}
+
+	/*destructor*/			~prop_change_printer		()
+	{
+		//
+	}
+
+	void					updated						(property_base *prop)
+	{
+		double val = 0;
+		if(prop->get_type() == "d")
+		{
+			val = dynamic_cast<property<double> *>(prop)->get_value();
+		}
+		printf("value %s of type %s changed %f\n", prop->get_name().c_str(), prop->get_type().c_str(), val);
+	}
+};
 
 int main()
 {
@@ -56,22 +82,39 @@ int main()
 
 	node *n = cl_root->at("a/b/c/d");
 	printf("at: %08x %s\n", (int)(int64_t)n, n->get_path().c_str());
+
+	prop_change_printer pcp;
+
+
+	property_base *plast = NULL;
 	for(auto prop : n->get_properties())
 	{
 		printf("%s %s\n", prop->get_type().c_str(), prop->get_name().c_str());
+		prop->add_listener(&pcp);
 
 		property<double> *pd = dynamic_cast<property<double> *>(prop);
 		if(pd != NULL)
 		{
 			printf("\t%f\n", pd->get_value());
 		}
+		plast = prop;
 	}
-
-	printf("\n");
 
 	for(auto entry : cl_root->ls())
 	{
 		printf("%s\n", entry.c_str());
+	}
+
+	for(int i = 0 ; i < 1000 ; i += 1)
+	{
+		pvd0->set_value(i / 100.0);
+		pvd1->set_value(i * 3.33);
+		sleep(1);
+
+		if(i == 2)
+		{
+			plast->remove_listener(&pcp);
+		}
 	}
 
 	return 0;

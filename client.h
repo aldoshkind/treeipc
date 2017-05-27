@@ -55,6 +55,8 @@ public:
 	}
 
 	void					update_value				() const;
+	void					subscribe					() const;
+	void					unsubscribe					() const;
 };
 
 template <class type>
@@ -83,7 +85,7 @@ public:
 		base_t::add_listener(l);
 		if(base_t::get_listeners().size() == 1)
 		{
-			// subscribe
+			subscribe();
 		}
 	}
 
@@ -92,7 +94,7 @@ public:
 		base_t::remove_listener(l);
 		if(base_t::get_listeners().size() == 0)
 		{
-			// unsubscribe
+			unsubscribe();
 		}
 	}
 
@@ -183,6 +185,7 @@ class client : public device::data_listener
 	client_node::ls_list_t	ls						(nid_t nid);
 
 	void					process_new_property	(const device::package_t &p);
+	void					process_prop_value		(const device::package_t &p);
 
 	property_base			*generate_property		(std::string type, std::string name);
 
@@ -193,6 +196,9 @@ public:
 	void					set_device				(device *d);
 	client_node				*get_root				();
 	void					update_prop				(prid_t prid);
+
+	void					subscribe				(prid_t prid);
+	void					unsubscribe				(prid_t prid);
 };
 
 

@@ -63,6 +63,9 @@ void client::data(const device::package_t &p)
 	case CMD_NEW_PROP:
 		process_new_property(p);
 	break;
+	case CMD_PROP_VALUE:
+		process_prop_value(p);
+	break;
 	default:
 	break;
 	}
@@ -208,7 +211,66 @@ void client::update_prop(prid_t prid)
 	return;
 }
 
+void client::subscribe(prid_t prid)
+{
+	device::package_t req;
+
+	req.set_prid(prid);
+	req.set_cmd(CMD_SUBSCRIBE);
+
+	dev->write(req);
+}
+
+void client::unsubscribe(prid_t prid)
+{
+	device::package_t req;
+
+	req.set_prid(prid);
+	req.set_cmd(CMD_UNSUBSCRIBE);
+
+	dev->write(req);
+}
+
 void property_fake::update_value() const
 {
 	cl->update_prop(get_prid());
+}
+
+void property_fake::subscribe() const
+{
+	cl->subscribe(get_prid());
+}
+
+void property_fake::unsubscribe() const
+{
+	cl->unsubscribe(get_prid());
+}
+
+void client::process_prop_value(const device::package_t &p)
+{
+	const prid_t &prid = p.get_prid();
+	props_t::iterator it = props.find(prid);
+	if(it == props.end())
+	{
+		return;
+	}
+
+	uint32_t sz = p.read<uint32_t>(0);
+	serializer_base::buffer_t buf;
+	buf.resize(sz);
+	p.read(sizeof(sz), &(buf[0]), sz);
+
+	property_fake *pvf = dynamic_cast<property_fake *>(it->second);
+	if(pvf != NULL)
+	{
+		pvf->set_deserialization(true);
+	}
+
+	serializer.deserialize(buf, it->second);
+
+	if(pvf != NULL)
+	{
+		pvf->set_deserialization(false);
+	}
+	it->second->notify_change();
 }

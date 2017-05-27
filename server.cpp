@@ -116,6 +116,12 @@ void server::data(const device::package_t &p)
 	case CMD_PROP_UPDATE:
 		cmd_get_prop(p);
 	break;
+	case CMD_SUBSCRIBE:
+		cmd_subscribe(p, false);
+	break;
+	case CMD_UNSUBSCRIBE:
+		cmd_subscribe(p, true);
+	break;
 	default:
 	break;
 	}
@@ -280,4 +286,46 @@ property_base *server::get_prop(prid_t prid)
 {
 	props_t::iterator it = props.find(prid);
 	return (it == props.end()) ? NULL : it->second;
+}
+
+void server::cmd_subscribe(const device::package_t &p, bool erase)
+{
+	const prid_t &pr = p.get_prid();
+	props_t::iterator it = props.find(pr);
+	if(it == props.end())
+	{
+		return;
+	}
+
+	if(erase == false)
+	{
+		props_subscribed.insert(pr);
+		it->second->add_listener(this);
+	}
+	else
+	{
+		props_subscribed.erase(pr);
+		it->second->remove_listener(this);
+	}
+}
+
+void server::updated(property_base *prop)
+{
+	prid_t prid;
+	get_prid(prop, prid);
+	if(props_subscribed.find(prid) == props_subscribed.end())
+	{
+		return;
+	}
+
+	device::package_t resp;
+	serializer_base::buffer_t buf = serializer.serialize(prop);
+
+	resp.set_cmd(CMD_PROP_VALUE);
+	resp.set_prid(prid);
+
+	resp.append<uint32_t>(buf.size());
+	resp.append(&(buf[0]), buf.size());
+
+	dev->write(resp);
 }

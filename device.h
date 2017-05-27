@@ -23,6 +23,9 @@ enum CMD
 	CMD_PROP_UPDATE = 8,
 	CMD_PROP_UPDATE_ERROR = 9,
 	CMD_PROP_UPDATE_SUCCESS = 10,
+	CMD_SUBSCRIBE = 11,
+	CMD_UNSUBSCRIBE = 12,
+	CMD_PROP_VALUE = 13
 };
 
 class package : private std::vector<uint8_t>
