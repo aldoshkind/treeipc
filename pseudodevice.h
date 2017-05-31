@@ -33,10 +33,7 @@ public:
 	void					accept						(const package &p)
 	{
 		in = p;
-		if(listener != NULL)
-		{
-			listener->data(p);
-		}
+		accept_data(p);
 	}
 
 	bool					write						(const package_t &p)

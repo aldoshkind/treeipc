@@ -9,7 +9,8 @@ SOURCES += main.cpp \
     client_node.cpp \
     server.cpp \
     client.cpp \
-    package.cpp
+    package.cpp \
+    tree/property_listener.cpp
 
 HEADERS += \
     tree/event_printer.h \
@@ -25,4 +26,8 @@ HEADERS += \
     client.h \
     package.h \
     client_node.h \
-    property_serializer.h
+    property_serializer.h \
+    socket_device.h \
+    tree/property_listener.h
+
+LIBS += -pthread

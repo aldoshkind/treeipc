@@ -41,14 +41,6 @@ class package : private std::vector<uint8_t>
 	msgid_t						*msgid;
 	size_type					header_size;
 
-	void						reset_header		()
-	{
-		nid = (nid_t *)&(*begin());
-		cmd = (cmd_t *)(nid + 1);
-		msgid = (msgid_t *)(cmd + 1);
-		header_size = (uint8_t *)(msgid + 1) - (uint8_t *)nid;
-	}
-
 	void						init				()
 	{
 		extend_by(sizeof(*nid));
@@ -58,7 +50,7 @@ class package : private std::vector<uint8_t>
 	}
 
 public:
-	/*constructor*/				package				()
+	/*constructor*/				package				() : base_t()
 	{
 		init();
 	}
@@ -74,6 +66,14 @@ public:
 	/*destructor*/				~package			()
 	{
 		//
+	}
+
+	void						reset_header		()
+	{
+		nid = (nid_t *)&(*begin());
+		cmd = (cmd_t *)(nid + 1);
+		msgid = (msgid_t *)(cmd + 1);
+		header_size = (uint8_t *)(msgid + 1) - (uint8_t *)nid;
 	}
 
 	const package				&operator =			(const package op)
@@ -179,21 +179,12 @@ public:
 	}
 
 	using base_t::size;
+	using base_t::operator [];
 };
 
 class device
 {
 public:
-	/*constructor*/			device				()
-	{
-		listener = NULL;
-	}
-
-	virtual /*destructor*/	~device				()
-	{
-		//
-	}
-
 	typedef package								package_t;
 
 	class data_listener
@@ -212,9 +203,37 @@ public:
 		virtual void					data						(const package_t &p) = 0;
 	};
 
+private:
+	data_listener			*listener;
+
+protected:
+	int						accept_data			(const package_t &p)
+	{
+		if(listener != NULL)
+		{
+			listener->data(p);
+			return 0;
+		}
+		return -1;
+	}
+
+public:
+	/*constructor*/			device				()
+	{
+		listener = NULL;
+	}
+
+	virtual /*destructor*/	~device				()
+	{
+		//
+	}
+
+	void						set_listener		(data_listener *l)
+	{
+		this->listener = l;
+	}
+
 	virtual bool				write				(const package_t &p) = 0;					// just writes package to device
 	virtual bool				send				(package_t req, package_t &resp) = 0;		// blocks and waits for response
-
-	data_listener			*listener;
 };
 

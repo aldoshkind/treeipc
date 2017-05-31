@@ -12,6 +12,8 @@
 #include "client.h"
 #include "server.h"
 
+#include "socket_device.h"
+
 #include "property_serializer.h"
 
 using namespace std;
@@ -42,6 +44,9 @@ public:
 
 int main()
 {
+	socket_device sd;
+	sd.listen_on("", 52313);
+
 	pseudodevice pd1;
 	pseudodevice pd2(&pd1);
 
@@ -57,8 +62,8 @@ int main()
 
 	srv.set_target(root_srv.at("test"));
 
-	pd1.listener = &cl;
-	pd2.listener = &srv;
+	pd1.set_listener(&cl);
+	pd2.set_listener(&srv);
 
 	root_srv.generate("test/a/b/c/d/e/f");
 	root_srv.generate("test/b");
@@ -85,7 +90,6 @@ int main()
 
 	prop_change_printer pcp;
 
-
 	property_base *plast = NULL;
 	for(auto prop : n->get_properties())
 	{
@@ -105,7 +109,7 @@ int main()
 		printf("%s\n", entry.c_str());
 	}
 
-	for(int i = 0 ; i < 1000 ; i += 1)
+	/*for(int i = 0 ; i < 5 ; i += 1)
 	{
 		pvd0->set_value(i / 100.0);
 		pvd1->set_value(i * 3.33);
@@ -115,7 +119,7 @@ int main()
 		{
 			plast->remove_listener(&pcp);
 		}
-	}
+	}*/
 
 	return 0;
 }
