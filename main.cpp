@@ -16,6 +16,8 @@
 
 #include "property_serializer.h"
 
+#include "io_service.h"
+
 using namespace std;
 
 class prop_change_printer : public property_listener
@@ -44,11 +46,8 @@ public:
 
 int main()
 {
-	char test[] = "ass";
-
-
 	socket_client sc("127.0.0.1", 21313);
-	bool result = sc.write(test, sizeof(test));
+	sc.write("ass\n", 4);
 
 	return 0;
 

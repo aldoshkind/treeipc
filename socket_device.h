@@ -11,100 +11,65 @@
 #include <mutex>
 #include <map>
 
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
+#include <boost/asio.hpp>
+#include <boost/bind.hpp>
 
 #include "device.h"
-
-
+#include "io_service.h"
 
 class socket_client
 {
-	int							fd;
+	boost::asio::ip::tcp::socket socket;
 
 	std::string					host;
 	int							port;
 
-	int							disconnect					()
+	void						connect						()
 	{
-		if(fd != -1)
-		{
-			close(fd);
-			fd = -1;
-		}
-
-		return 0;
-	}
-
-	int							reconnect					()
-	{
-		disconnect();
-
-		struct sockaddr_in server;
-
-		fd = socket(AF_INET , SOCK_STREAM , 0);
-		if (fd == -1)
-		{
-			printf("Could not create socket");
-			return -1;
-		}
-		puts("Socket created");
-
-		server.sin_addr.s_addr = inet_addr(host.c_str());
-		server.sin_family = AF_INET;
-		server.sin_port = htons(port);
-
-		if(connect(fd, (struct sockaddr *)&server, sizeof(server)) < 0)
-		{
-			perror("connect failed. Error");
-			fd = -1;
-			return -1;
-		}
-
-		puts("Connected\n");
-
-		return 0;
+		socket.async_connect(boost::asio::ip::tcp::endpoint(boost::asio::ip::address::from_string(host), port),
+							 boost::bind(&socket_client::connect_handler, this, boost::asio::placeholders::error)
+							 );
 	}
 
 public:
-	/*constructor*/				socket_client				(std::string host, int port)
+	/*constructor*/				socket_client				(std::string host, int port) : socket(treeipc_over_boost::get_io_service())
 	{
-		fd = -1;
-
 		this->host = host;
 		this->port = port;
+
+		connect();
 	}
 
 	/*destructor*/				~socket_client				()
 	{
-		disconnect();
+		//
 	}
 
-	bool						write						(void *data, uint32_t size)
+	void						connect_handler				(const boost::system::error_code &error)
 	{
-		if(fd == -1)
+		//if(error)
 		{
-			if(reconnect() == -1)
-			{
-				return false;
-			}
+			printf("error %s %d\n", error.message().c_str(), socket.is_open());
+			boost::system::error_code ec;
+			socket.write_some(boost::asio::buffer("test", 5), ec);
+			printf("%d %s\n", ec.value(), ec.message().c_str());
 		}
-		int rv = ::write(fd, data, size);
-		printf("sending\n");
-		if(rv != size)
+	}
+
+	size_t						write						(const void *data, uint32_t size)
+	{
+		boost::system::error_code ec;
+		socket.write_some(boost::asio::buffer(data, size), ec);
+
+		if(ec.value() != 0)
 		{
-			return false;
+			connect();
+			return 0;
 		}
-		return true;
+
+		return 0;
 	}
 };
-
-
-
 
 class socket_device : public device
 {
