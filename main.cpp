@@ -44,11 +44,26 @@ public:
 
 int main()
 {
-	socket_device sd;
-	sd.listen_on("", 52313);
+	char test[] = "ass";
 
-	pseudodevice pd1;
-	pseudodevice pd2(&pd1);
+
+	socket_client sc("127.0.0.1", 21313);
+	bool result = sc.write(test, sizeof(test));
+
+	return 0;
+
+
+
+	/*pseudodevice pd1;
+	pseudodevice pd2(&pd1);*/
+
+	socket_device sd1;
+	//sd1.listen_on("", 21313);
+
+	sleep(1);
+
+	socket_device sd2;
+	sd2.set_server("", 21313);
 
 	node root_cl;
 	node root_srv;
@@ -57,13 +72,13 @@ int main()
 	client cl;
 	server srv;
 
-	cl.set_device(&pd1);
-	srv.set_device(&pd2);
+	cl.set_device(&sd1);
+	srv.set_device(&sd2);
 
 	srv.set_target(root_srv.at("test"));
 
-	pd1.set_listener(&cl);
-	pd2.set_listener(&srv);
+	sd1.set_listener(&cl);
+	sd2.set_listener(&srv);
 
 	root_srv.generate("test/a/b/c/d/e/f");
 	root_srv.generate("test/b");

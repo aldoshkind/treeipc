@@ -21,6 +21,91 @@
 #include "device.h"
 
 
+
+class socket_client
+{
+	int							fd;
+
+	std::string					host;
+	int							port;
+
+	int							disconnect					()
+	{
+		if(fd != -1)
+		{
+			close(fd);
+			fd = -1;
+		}
+
+		return 0;
+	}
+
+	int							reconnect					()
+	{
+		disconnect();
+
+		struct sockaddr_in server;
+
+		fd = socket(AF_INET , SOCK_STREAM , 0);
+		if (fd == -1)
+		{
+			printf("Could not create socket");
+			return -1;
+		}
+		puts("Socket created");
+
+		server.sin_addr.s_addr = inet_addr(host.c_str());
+		server.sin_family = AF_INET;
+		server.sin_port = htons(port);
+
+		if(connect(fd, (struct sockaddr *)&server, sizeof(server)) < 0)
+		{
+			perror("connect failed. Error");
+			fd = -1;
+			return -1;
+		}
+
+		puts("Connected\n");
+
+		return 0;
+	}
+
+public:
+	/*constructor*/				socket_client				(std::string host, int port)
+	{
+		fd = -1;
+
+		this->host = host;
+		this->port = port;
+	}
+
+	/*destructor*/				~socket_client				()
+	{
+		disconnect();
+	}
+
+	bool						write						(void *data, uint32_t size)
+	{
+		if(fd == -1)
+		{
+			if(reconnect() == -1)
+			{
+				return false;
+			}
+		}
+		int rv = ::write(fd, data, size);
+		printf("sending\n");
+		if(rv != size)
+		{
+			return false;
+		}
+		return true;
+	}
+};
+
+
+
+
 class socket_device : public device
 {
 	std::thread					*thread_listener;
@@ -161,7 +246,9 @@ class socket_device : public device
 
 			for( ; ; )
 			{
-				char buff[512] = {0};
+				char buff[1] = {0};
+				//int rd = read(connection_descriptor, buff, sizeof(buff));
+				printf("reading\n");
 				int rd = read(connection_descriptor, buff, sizeof(buff));
 				printf("socket read %d\n", rd);
 
@@ -185,6 +272,40 @@ class socket_device : public device
 		return;
 	}
 
+	int							reconnect					()
+	{
+		if(connection_descriptor != -1)
+		{
+			close(connection_descriptor);
+			connection_descriptor = -1;
+		}
+
+		struct sockaddr_in server;
+
+		connection_descriptor = socket(AF_INET , SOCK_STREAM , 0);
+		if (connection_descriptor == -1)
+		{
+			printf("Could not create socket");
+			return -1;
+		}
+		puts("Socket created");
+
+		server.sin_addr.s_addr = inet_addr(host.c_str());
+		server.sin_family = AF_INET;
+		server.sin_port = htons(port);
+
+		if(connect(connection_descriptor, (struct sockaddr *)&server, sizeof(server)) < 0)
+		{
+			perror("connect failed. Error");
+			connection_descriptor = -1;
+			return -1;
+		}
+
+		puts("Connected\n");
+
+		return 0;
+	}
+
 public:
 	/*constructor*/				socket_device				()
 	{
@@ -205,9 +326,15 @@ public:
 	{
 		if(connection_descriptor == -1)
 		{
-			return false;
+			if(reconnect() == -1)
+			{
+				return false;
+			}
 		}
 		int rv = ::write(connection_descriptor, &p[0], p.size());
+		printf("sending\n");
+		//int rv = ::send(connection_descriptor, &p[0], p.size(), 0);
+		//close(connection_descriptor);
 		if(rv != p.size())
 		{
 			return false;
@@ -221,7 +348,11 @@ public:
 		msgid_t mid = current_msgid++;
 		req.set_msgid(mid);
 
+		write(req);
+
 		sender_condvars[mid].wait(lock);
+
+		resp = in;
 
 		return false;
 	}
@@ -238,5 +369,13 @@ public:
 		}
 
 		thread_listener = new std::thread(&socket_device::listen_thread, this);
+	}
+
+	void						set_server					(std::string host, int port)
+	{
+		this->host = host.size() ? host : "127.0.0.1";
+		this->port = port;
+
+		reconnect();
 	}
 };
