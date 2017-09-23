@@ -5,11 +5,12 @@
 
 #include <vector>
 
+#include "observable.h"
+
 typedef uint64_t	unique_id_t;			// unique id
 typedef unique_id_t		nid_t;			// node id
 typedef unique_id_t		prid_t;			// prop id
 typedef uint8_t		cmd_t;
-typedef uint32_t	msgid_t;
 
 enum CMD
 {
@@ -38,22 +39,12 @@ class package : private std::vector<uint8_t>
 		prid_t						*prid;
 	};
 	cmd_t						*cmd;
-	msgid_t						*msgid;
 	size_type					header_size;
-
-	void						reset_header		()
-	{
-		nid = (nid_t *)&(*begin());
-		cmd = (cmd_t *)(nid + 1);
-		msgid = (msgid_t *)(cmd + 1);
-		header_size = (uint8_t *)(msgid + 1) - (uint8_t *)nid;
-	}
 
 	void						init				()
 	{
 		extend_by(sizeof(*nid));
 		extend_by(sizeof(*cmd));
-		extend_by(sizeof(*msgid));
 		reset_header();
 	}
 
@@ -68,12 +59,18 @@ public:
 		init();
 		*cmd = p.get_cmd();
 		*nid = p.get_nid();
-		*msgid = p.get_msgid();
 	}
 
 	/*destructor*/				~package			()
 	{
 		//
+	}
+
+	void						reset_header		()
+	{
+		nid = (nid_t *)&(*begin());
+		cmd = (cmd_t *)(nid + 1);
+		header_size = (uint8_t *)(cmd + 1) - (uint8_t *)nid;
 	}
 
 	const package				&operator =			(const package op)
@@ -83,7 +80,6 @@ public:
 		reset_header();
 		set_nid(op.get_nid());
 		set_cmd(op.get_cmd());
-		set_msgid(op.get_msgid());
 
 		return *this;
 	}
@@ -92,7 +88,6 @@ public:
 	{
 		package resp;
 		resp.set_cmd(get_cmd());
-		resp.set_msgid(get_msgid());
 		resp.set_nid(get_nid());
 
 		return resp;
@@ -153,11 +148,6 @@ public:
 		return *cmd;
 	}
 
-	msgid_t					get_msgid				() const
-	{
-		return *msgid;
-	}
-
 	void					set_cmd					(cmd_t c)
 	{
 		*cmd = c;
@@ -173,20 +163,24 @@ public:
 		*prid = n;
 	}
 
-	void					set_msgid				(msgid_t m)
-	{
-		*msgid = m;
-	}
-
 	using base_t::size;
+	using base_t::push_back;
+	using base_t::operator [];
+	using base_t::clear;
+	using base_t::reserve;
+	using base_t::resize;
+	using base_t::insert;
+	using base_t::erase;
+	using base_t::begin;
+	using base_t::end;
 };
 
-class device
+class device : public one_to_one_observable<void, const package&>
 {
 public:
 	/*constructor*/			device				()
 	{
-		listener = NULL;
+		//
 	}
 
 	virtual /*destructor*/	~device				()
@@ -194,27 +188,9 @@ public:
 		//
 	}
 
-	typedef package								package_t;
-
-	class data_listener
-	{
-	public:
-		/*constructor*/			data_listener				()
-		{
-			//
-		}
-
-		virtual /*destructor*/	~data_listener				()
-		{
-			//
-		}
-
-		virtual void					data						(const package_t &p) = 0;
-	};
+	typedef	package									package_t;
 
 	virtual bool				write				(const package_t &p) = 0;					// just writes package to device
 	virtual bool				send				(package_t req, package_t &resp) = 0;		// blocks and waits for response
-
-	data_listener			*listener;
 };
 
