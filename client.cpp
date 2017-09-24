@@ -40,6 +40,10 @@ client_node *client::fetch_node(nid_t nid, std::string name)
 		return NULL;
 	}
 
+	auto cl = new client_node(rep.get_nid());
+	tracked[rep.get_nid()] = cl;
+	cl->set_client(this);
+
 	return tracked[rep.get_nid()];
 }
 
