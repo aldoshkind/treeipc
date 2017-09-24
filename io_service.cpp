@@ -11,11 +11,11 @@ namespace treeipc_over_boost
 class ios_wrapper
 {
 	io_service ios;
-	std::thread thread;
 	boost::asio::io_service::work work;
+	std::thread thread;
 
 public:
-	/*constructor*/					ios_wrapper					() : thread(std::bind(&ios_wrapper::run, this)), work(ios)
+	/*constructor*/					ios_wrapper					() : work(ios), thread(std::bind(&ios_wrapper::run, this))
 	{
 		//
 	}

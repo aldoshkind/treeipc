@@ -17,33 +17,30 @@
 #include "property_serializer.h"
 
 #include "io_service.h"
+#include "socket_client.h"
 
-using namespace std;
-
-
+#include "acceptor.h"
+#include "conn_server.h"
 
 int main()
 {
-	socket_device sd1;
-	sd1.listen_on("", 21313);
+	acceptor acc;
 
-	node root_srv;
-	root_srv.generate("test");
+	node root;
 
-	server srv;
+	conn_server srv(&root);
 
-	srv.set_device(&sd1);
+	acc.set_listener(&srv);
+	acc.accept();
 
-	srv.set_target(root_srv.at("test"));
+	root.generate("test");
 
-	sd1.set_listener(&srv);
+	root.generate("test/a/b/c/d/e/f");
+	root.generate("test/b");
+	root.generate("test/c");
+	root.generate("test/d");
 
-	root_srv.generate("test/a/b/c/d/e/f");
-	root_srv.generate("test/b");
-	root_srv.generate("test/c");
-	root_srv.generate("test/d");
-
-	node *d = root_srv.at("test/a/b/c/d");
+	node *d = root.at("test/a/b/c/d");
 
 	property_value<double> *pvd0 = new property_value<double>("prop_test0");
 	property_value<double> *pvd1 = new property_value<double>("prop_test1");

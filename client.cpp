@@ -43,7 +43,7 @@ client_node *client::fetch_node(nid_t nid, std::string name)
 	return tracked[rep.get_nid()];
 }
 
-void client::data(const device::package_t &p)
+void client::process_notification(const device::package_t &p)
 {
 	if(p.size() < 1)
 	{

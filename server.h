@@ -10,7 +10,7 @@
 
 #include "property_serializer.h"
 
-class server : public device::data_listener, public node::new_property_listener, public property_listener
+class server : public device::listener, public node::new_property_listener, public property_listener
 {
 	typedef std::map<nid_t, node *>		tracked_t;
 	tracked_t							tracked;
@@ -36,7 +36,7 @@ class server : public device::data_listener, public node::new_property_listener,
 	void					cmd_get_prop		(const device::package_t &p);
 	void					cmd_subscribe		(const device::package_t &p, bool erase = false);
 
-	void					data				(const device::package_t &p);
+	void					process_notification(const device::package_t &p);
 	void					child_added			(node *n);
 	void					child_removed		(node *, std::string name);
 
@@ -55,6 +55,7 @@ class server : public device::data_listener, public node::new_property_listener,
 
 public:
 	/*constructor*/			server				();
+	/*constructor*/			server				(device *d);
 	/*destructor*/			~server				();
 
 	void					set_target			(node *t);

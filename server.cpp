@@ -8,6 +8,16 @@
 	current_prid = 0;
 }
 
+/*constructor*/ server::server(device *d)
+{
+	dev = NULL;
+	target = NULL;
+	current_nid = 0;
+	current_prid = 0;
+
+	set_device(d);
+}
+
 /*destructor*/ server::~server()
 {
 	//
@@ -83,7 +93,6 @@ void server::cmd_ls(const device::package_t &p)
 	if(t == NULL)
 	{
 		resp.set_cmd(CMD_LS_ERROR);
-		resp.set_msgid(p.get_msgid());
 		resp.set_nid(p.get_nid());
 	}
 	else
@@ -91,7 +100,6 @@ void server::cmd_ls(const device::package_t &p)
 		node::ls_list_t list = t->ls();
 
 		resp.set_cmd(CMD_LS_SUCCESS);
-		resp.set_msgid(p.get_msgid());
 		resp.set_nid(nid);
 
 		resp.append<uint32_t>(list.size());
@@ -100,10 +108,10 @@ void server::cmd_ls(const device::package_t &p)
 			append_string(resp, item);
 		}
 	}
-	dev->write(resp);
+	dev->reply(p, resp);
 }
 
-void server::data(const device::package_t &p)
+void server::process_notification(const device::package_t &p)
 {
 	switch(p.get_cmd())
 	{
@@ -136,7 +144,6 @@ void server::cmd_at(const device::package_t &p)
 	if(t == NULL)
 	{
 		resp.set_cmd(CMD_AT_ERROR);
-		resp.set_msgid(p.get_msgid());
 		resp.set_nid(p.get_nid());
 	}
 	else
@@ -149,16 +156,14 @@ void server::cmd_at(const device::package_t &p)
 		if(n == NULL)
 		{
 			resp.set_cmd(CMD_AT_ERROR);
-			resp.set_msgid(p.get_msgid());
 			resp.set_nid(p.get_nid());
 		}
 
-		nid_t nid = get_nid(n); // tt = target tracker
+		nid_t nid = get_nid(n);
 		resp.set_cmd(CMD_AT_SUCCESS);
-		resp.set_msgid(p.get_msgid());
 		resp.set_nid(nid);
 	}
-	dev->write(resp);
+	dev->reply(p, resp);
 
 	if(n != NULL)
 	{
@@ -265,7 +270,6 @@ void server::cmd_get_prop(const device::package_t &p)
 	if(prop == NULL)
 	{
 		resp.set_cmd(CMD_PROP_UPDATE_ERROR);
-		resp.set_msgid(p.get_msgid());
 		resp.set_prid(p.get_prid());
 	}
 	else
@@ -273,13 +277,12 @@ void server::cmd_get_prop(const device::package_t &p)
 		serializer_base::buffer_t buf = serializer.serialize(prop);
 
 		resp.set_cmd(CMD_PROP_UPDATE_SUCCESS);
-		resp.set_msgid(p.get_msgid());
 		resp.set_prid(prid);
 
 		resp.append<uint32_t>(buf.size());
 		resp.append(&(buf[0]), buf.size());
 	}
-	dev->write(resp);
+	dev->reply(p, resp);
 }
 
 property_base *server::get_prop(prid_t prid)

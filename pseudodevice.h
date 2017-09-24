@@ -1,3 +1,5 @@
+#ifdef TEMPORARY_EXCLUDED_FROM_COMPILATION
+
 #pragma once
 
 #include "device.h"
@@ -58,3 +60,5 @@ public:
 		return true;
 	}
 };
+
+#endif

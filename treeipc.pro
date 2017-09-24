@@ -11,7 +11,8 @@ SOURCES += main.cpp \
     client.cpp \
     package.cpp \
     tree/property_listener.cpp \
-    io_service.cpp
+    io_service.cpp \
+    socket_client.cpp
 
 HEADERS += \
     tree/event_printer.h \
@@ -30,6 +31,8 @@ HEADERS += \
     property_serializer.h \
     socket_device.h \
     tree/property_listener.h \
-    io_service.h
+    io_service.h \
+    acceptor.h \
+    conn_server.h
 
 LIBS += -pthread -lboost_system

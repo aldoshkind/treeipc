@@ -163,7 +163,7 @@ public:
 
 
 
-class client : public device::data_listener
+class client : public device::listener
 {
 	friend class client_node;
 
@@ -179,7 +179,7 @@ class client : public device::data_listener
 	typedef std::map<prid_t, property_base *>		props_t;
 	props_t											props;
 
-	void					data					(const device::package_t &p);
+	void					process_notification	(const device::package_t &p);
 	client_node				*fetch_node				(nid_t nid, std::string name);
 
 	client_node::ls_list_t	ls						(nid_t nid);
