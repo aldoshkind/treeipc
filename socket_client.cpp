@@ -31,7 +31,7 @@ size_t socket_client::write(const void *data, size_t size)
 	boost::system::error_code ec;
 	size_t written = socket->write_some(boost::asio::buffer(data, size), ec);
 
-	printf("written %d\n", written);
+	//printf("written %d\n", written);
 
 	if(ec.value() != 0)
 	{
@@ -45,7 +45,7 @@ size_t socket_client::write(const void *data, size_t size)
 
 void socket_client::data_ready(const boost::system::error_code &e, size_t bytes_read)
 {
-	printf("read %d\n", bytes_read);
+	//printf("read %d\n", bytes_read);
 
 	if(e.value() != 0)
 	{

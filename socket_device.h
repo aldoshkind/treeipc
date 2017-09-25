@@ -31,7 +31,7 @@ class package_codec : public one_to_one_observable<void, const std::vector<uint8
 
 	void process_notification(const void *data, size_t size)
 	{
-		printf("received data of size %d\n", size);
+		//printf("received data of size %d\n", size);
 #warning в этой функции ахинея, надо переделать
 		if(left == 0)
 		{
@@ -44,7 +44,7 @@ class package_codec : public one_to_one_observable<void, const std::vector<uint8
 			if(buffer.size() == sizeof(int))
 			{
 				left = *(int *)(&buffer[0]);
-				printf("left is %d\n", left);
+				//printf("left is %d\n", left);
 
 				if(left > 4096)
 				{
@@ -68,7 +68,7 @@ class package_codec : public one_to_one_observable<void, const std::vector<uint8
 			std::vector<uint8_t> result(buffer);
 			result.resize(left);
 			notify(result);
-			printf("received buf of size %d\n", left);
+			//printf("received buf of size %d\n", left);
 
 			buffer.erase(buffer.begin(), buffer.begin() + left);
 			left = 0;
