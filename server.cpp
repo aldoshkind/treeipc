@@ -158,10 +158,12 @@ void server::cmd_at(const device::package_t &p)
 			resp.set_cmd(CMD_AT_ERROR);
 			resp.set_nid(p.get_nid());
 		}
-
-		nid_t nid = get_nid(n);
-		resp.set_cmd(CMD_AT_SUCCESS);
-		resp.set_nid(nid);
+		else
+		{
+			nid_t nid = get_nid(n);
+			resp.set_cmd(CMD_AT_SUCCESS);
+			resp.set_nid(nid);
+		}
 	}
 	dev->reply(p, resp);
 
