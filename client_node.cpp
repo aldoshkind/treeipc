@@ -122,6 +122,10 @@ node *client_node::get(std::string path, bool create)
 		{
 			child_id = insert(name, n);
 		}
+		else
+		{
+			return NULL;
+		}
 	}
 
 	client_node *cn = dynamic_cast<client_node *>(get_children().operator [](child_id));
