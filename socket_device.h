@@ -27,58 +27,38 @@ class package_codec : public one_to_one_observable<void, const std::vector<uint8
 
 	//package buffer;
 	std::vector<uint8_t> buffer;
-	int left;
+	typedef uint32_t pack_size_t;
+	pack_size_t pack_size;
 
 	void process_notification(const void *data, size_t size)
 	{
-		//printf("received data of size %d\n", size);
-#warning в этой функции ахинея, надо переделать
-		if(left == 0)
+		buffer.insert(buffer.end(), (char *)data, (char *)data + size);
+
+		for( ; ; )
 		{
-			for( ; buffer.size() < sizeof(int) && size > 0 ; )
+			if((pack_size == 0) && (buffer.size() >= sizeof(pack_size)))
 			{
-				buffer.push_back(*((char *)data++));
-				size -= 1;
+				pack_size = *(pack_size_t *)(&buffer[0]);
+				buffer.erase(buffer.begin(), buffer.begin() + sizeof(pack_size));
 			}
 
-			if(buffer.size() == sizeof(int))
+			if(pack_size == 0 || buffer.size() < pack_size)
 			{
-				left = *(int *)(&buffer[0]);
-				//printf("left is %d\n", left);
-
-				if(left > 4096)
-				{
-					left = 0;
-					buffer.erase(buffer.begin());
-					// тут происходит непонятно что. видимо надо закрывать соединение
-					return;
-				}
-				buffer.clear();
-				buffer.reserve(left);
+				// ждём пока не наберётся достаточно данных
+				return;
 			}
-		}
 
-		if(size != 0)
-		{
-			buffer.insert(buffer.end(), (char *)data, (char *)data + size);
-		}
-
-		if(buffer.size() >= left)
-		{
-			std::vector<uint8_t> result(buffer);
-			result.resize(left);
+			std::vector<uint8_t> result(buffer.begin(), buffer.begin() + pack_size);
 			notify(result);
-			//printf("received buf of size %d\n", left);
-
-			buffer.erase(buffer.begin(), buffer.begin() + left);
-			left = 0;
+			buffer.erase(buffer.begin(), buffer.begin() + pack_size);
+			pack_size = 0;
 		}
-	}
+}
 
 public:
 	package_codec()
 	{
-		left = 0;
+		pack_size = 0;
 		transport = nullptr;
 	}
 
@@ -159,6 +139,10 @@ public:
 		memcpy(&msgid, &(p[0]), sizeof(msgid));
 
 		package res;
+		if(p.size() < sizeof(msgid))
+		{
+			throw("fuck you fucking fuck");
+		}
 		res.resize(p.size() - sizeof(msgid));
 		memcpy(&(res[0]), &(p[0]) + sizeof(msgid), res.size());
 		res.reset_header();
