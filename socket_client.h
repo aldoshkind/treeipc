@@ -102,10 +102,14 @@ public:
 			printf("%s %s %d\n", __PRETTY_FUNCTION__, error.message().c_str(), socket->is_open());
 			return;
 		}
+		else
+		{
+			notify(socket);
+		}
 	}
 };
 
-class socket_client : public reliable_serial, connector::listener
+class socket_client : public reliable_serial, public connector::listener
 {
 	socket_sp					socket;
 
