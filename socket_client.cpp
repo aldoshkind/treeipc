@@ -74,6 +74,7 @@ void socket_client::start_receive()
 
 void socket_client::set_socket(socket_sp s)
 {
+	s->set_option(boost::asio::ip::tcp::no_delay(true));
 	socket = s;
 	is_connected = true;
 	start_receive();

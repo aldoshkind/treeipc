@@ -36,17 +36,12 @@ node *client_node::at(std::string path)
 		return n;
 	}
 
-/*		if(dev == NULL)
-	{
-		return NULL;
-	}*/
+#warning до сюда управление не доходит, нужно разобраться
 
 	device::package_t req, rep;
 	req.set_cmd(CMD_AT);
 	req.set_nid(nid);
 	append_string(req, path);
-
-//		dev->send(req, rep);
 
 	if(rep.get_cmd() == CMD_AT_ERROR)
 	{
