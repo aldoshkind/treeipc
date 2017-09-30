@@ -33,6 +33,7 @@ client_node *client::fetch_node(nid_t nid, std::string name)
 	req.set_nid(nid);
 	append_string(req, name);
 
+	std::lock_guard<std::mutex> lg(tracked_mutex);
 	dev->send(req, rep);
 
 	if(rep.get_cmd() == CMD_AT_ERROR)
@@ -58,14 +59,18 @@ void client::process_notification(const device::package_t &p)
 	{
 	case CMD_AT_SUCCESS:
 	{
+		printf("CMD_AT_SUCCESS\n");
 		client_node *n = new client_node(p.get_nid());
 		n->set_client(this);
 
 		tracked[p.get_nid()] = n;
+		printf("CMD_AT_SUCCESS 0\n");
 	}
 	break;
 	case CMD_NEW_PROP:
+		printf("CMD_NEW_PROP\n");
 		process_new_property(p);
+		printf("CMD_NEW_PROP 0\n");
 	break;
 	case CMD_PROP_VALUE:
 		process_prop_value(p);
@@ -77,6 +82,7 @@ void client::process_notification(const device::package_t &p)
 
 void client::process_new_property(const device::package_t &p)
 {
+	std::lock_guard<std::mutex> lg(tracked_mutex);
 	tracked_t::iterator it = tracked.find(p.get_nid());
 	if(it == tracked.end())
 	{
@@ -250,6 +256,18 @@ void property_fake::unsubscribe() const
 	cl->unsubscribe(get_prid());
 }
 
+void property_fake::request_set(const void *value) const
+{
+	const property_base *pb = dynamic_cast<const property_base *>(this);
+
+	if(pb == nullptr)
+	{
+		return;
+	}
+
+	cl->request_prop_set_value(pb, value);
+}
+
 void client::process_prop_value(const device::package_t &p)
 {
 	const prid_t &prid = p.get_prid();
@@ -277,4 +295,43 @@ void client::process_prop_value(const device::package_t &p)
 		pvf->set_deserialization(false);
 	}
 	it->second->notify_change();
+}
+
+
+void client::request_prop_set_value(const property_base *p, const void *value)
+{
+	serializer_base::buffer_t buf = serializer.serialize(p, value);
+
+	if(buf.size() == 0)
+	{
+		return;
+	}
+
+	device::package_t req;
+
+	prid_t prid = 0;
+	if(get_prop_prid(p, prid) == false)
+	{
+		return;
+	}
+
+	req.set_prid(prid);
+	req.set_cmd(CMD_PROP_SET_VALUE);
+	req.append(&(buf[0]), buf.size());
+
+	dev->write(req);
+}
+
+bool client::get_prop_prid(const property_base *p, prid_t &prid) const
+{
+	for(props_t::const_iterator it = props.begin() ; it != props.end() ; ++it)
+	{
+		if(it->second == p)
+		{
+			prid = it->first;
+			return true;
+		}
+	}
+
+	return false;
 }

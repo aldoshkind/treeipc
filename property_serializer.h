@@ -21,10 +21,10 @@ public:
 		//
 	}
 
-	virtual buffer_t			serialize					(property_base *c) = 0;
-	virtual buffer_t			serialize					(void *c) = 0;
-	virtual bool				deserialize					(const buffer_t &buf, property_base *c) = 0;
-	virtual bool				deserialize					(const buffer_t &buf, void *c) = 0;
+	virtual buffer_t			serialize					(property_base *c) const = 0;
+	virtual buffer_t			serialize					(const void *c) const = 0;
+	virtual bool				deserialize					(const buffer_t &buf, property_base *c) const = 0;
+	virtual bool				deserialize					(const buffer_t &buf, void *c) const = 0;
 };
 
 template <class type>
@@ -41,7 +41,7 @@ public:
 		//
 	}
 
-	buffer_t					serialize					(property_base *c)
+	buffer_t					serialize					(property_base *c) const
 	{
 		buffer_t buf;
 		property<type> *pd = dynamic_cast<property<type> *>(c);
@@ -58,7 +58,7 @@ public:
 		return buf;
 	}
 
-	buffer_t					serialize					(void *c)
+	buffer_t					serialize					(const void *c) const
 	{
 		buffer_t buf;
 		buf.resize(sizeof(type));
@@ -67,7 +67,7 @@ public:
 		return buf;
 	}
 
-	bool						deserialize					(const buffer_t &buf, property_base *c)
+	bool						deserialize					(const buffer_t &buf, property_base *c) const
 	{
 		property<type> *pd = dynamic_cast<property<type> *>(c);
 		if(pd == NULL || buf.size() != sizeof(type))
@@ -81,7 +81,7 @@ public:
 		return true;
 	}
 
-	bool						deserialize					(const buffer_t &buf, void *c)
+	bool						deserialize					(const buffer_t &buf, void *c) const
 	{
 		if(buf.size() != sizeof(type))
 		{
@@ -134,6 +134,16 @@ public:
 			return serializer_base::buffer_t();
 		}
 		return it->second->serialize(c);
+	}
+
+	serializer_base::buffer_t		serialize					(const property_base *c, const void *v) const
+	{
+		serializers_t::const_iterator it = serializers.find(c->get_type());
+		if(it == serializers.end())
+		{
+			return serializer_base::buffer_t();
+		}
+		return it->second->serialize(v);
 	}
 
 	template <class type>

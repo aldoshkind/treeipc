@@ -1,5 +1,7 @@
 #pragma once
 
+#include <mutex>
+
 #include "device.h"
 #include "package.h"
 
@@ -16,12 +18,19 @@ public:
 
 class client;
 
+
+
+
+
+
+
+
 class property_fake
 {
 	prid_t					prid;
 
 	bool					deserialization_in_process;
-	client								*cl;
+	client					*cl;
 
 public:
 	/*constructor*/			property_fake			(client *c) : cl(c)
@@ -57,7 +66,14 @@ public:
 	void					update_value				() const;
 	void					subscribe					() const;
 	void					unsubscribe					() const;
+	void					request_set					(const void *value) const;
 };
+
+
+
+
+
+
 
 template <class type>
 class property_value_fake : public property_value<type>, public property_fake
@@ -100,10 +116,11 @@ public:
 
 	void					set_value						(const type &v)
 	{
-		base_t::set_value(v);
+		//base_t::set_value(v);
 		if(is_deserialization_in_process() == false)
 		{
 			// report value changed
+			request_set(&v);
 		}
 	}
 
@@ -111,6 +128,15 @@ public:
 
 	using base_t::operator =;
 };
+
+
+
+
+
+
+
+
+
 
 template <class type>
 class fake_property_factory : public property_factory_base
@@ -175,6 +201,7 @@ class client : public device::listener
 
 	typedef std::map<nid_t, client_node *>		tracked_t;
 	tracked_t									tracked;
+	std::mutex									tracked_mutex;
 
 	typedef std::map<prid_t, property_base *>		props_t;
 	props_t											props;
@@ -189,6 +216,8 @@ class client : public device::listener
 
 	property_base			*generate_property		(std::string type, std::string name);
 
+	bool					get_prop_prid			(const property_base *p, prid_t &prid) const;
+
 public:
 	/*constructor*/			client					();
 	/*destructor*/			~client					();
@@ -199,6 +228,8 @@ public:
 
 	void					subscribe				(prid_t prid);
 	void					unsubscribe				(prid_t prid);
+
+	void					request_prop_set_value	(const property_base *p, const void *value);
 };
 
 

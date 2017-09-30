@@ -26,7 +26,8 @@ enum CMD
 	CMD_PROP_UPDATE_SUCCESS = 10,
 	CMD_SUBSCRIBE = 11,
 	CMD_UNSUBSCRIBE = 12,
-	CMD_PROP_VALUE = 13
+	CMD_PROP_VALUE = 13,
+	CMD_PROP_SET_VALUE = 14
 };
 
 class package : private std::vector<uint8_t>
@@ -193,7 +194,7 @@ public:
 	virtual bool				write				(const package_t &p) = 0;					// just writes package to device
 	virtual bool				send				(package_t req, package_t &resp) = 0;		// blocks and waits for response
 	virtual bool				reply				(const package_t *req, const package &rep) = 0;		// replies on req with reply
-	bool				reply				(const package_t &req, const package &rep)
+	bool						reply				(const package_t &req, const package &rep)
 	{
 		return reply(&req, rep);
 	}
