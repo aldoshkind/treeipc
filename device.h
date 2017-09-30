@@ -134,6 +134,11 @@ public:
 		return true;
 	}
 
+	size_t					data_size				() const
+	{
+		return base_t::size() - header_size;
+	}
+
 	nid_t					get_nid					() const
 	{
 		return *nid;

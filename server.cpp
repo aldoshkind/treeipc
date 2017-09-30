@@ -130,6 +130,9 @@ void server::process_notification(const device::package_t &p)
 	case CMD_UNSUBSCRIBE:
 		cmd_subscribe(p, true);
 	break;
+	case CMD_PROP_SET_VALUE:
+		cmd_prop_value(p);
+	break;
 	default:
 	break;
 	}
@@ -333,4 +336,25 @@ void server::updated(property_base *prop)
 	resp.append(&(buf[0]), buf.size());
 
 	dev->write(resp);
+}
+
+void server::cmd_prop_value(const device::package_t &p)
+{
+	prid_t prid = p.get_prid();
+
+	printf("value for %d\n", prid);
+
+	if(props.find(prid) == props.end())
+	{
+		printf("property with prid %d not found\n", prid);
+		return;
+	}
+
+	property_base *pb = props[prid];
+
+	serializer_base::buffer_t buf;
+	buf.resize(p.data_size());
+	p.read(0, &(buf[0]), buf.size());
+
+	serializer.deserialize(buf, pb);
 }

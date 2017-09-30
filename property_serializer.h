@@ -77,7 +77,7 @@ public:
 
 		type val;
 		memcpy(&val, &buf[0], sizeof(val));
-		pd->sync_value(val);
+		pd->set_value(val);
 		return true;
 	}
 

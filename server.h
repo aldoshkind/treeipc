@@ -35,6 +35,7 @@ class server : public device::listener, public node::new_property_listener, publ
 	void					cmd_ls				(const device::package_t &p);
 	void					cmd_get_prop		(const device::package_t &p);
 	void					cmd_subscribe		(const device::package_t &p, bool erase = false);
+	void					cmd_prop_value		(const device::package_t &p);
 
 	void					process_notification(const device::package_t &p);
 	void					child_added			(node *n);

@@ -38,12 +38,12 @@ int main()
 	root.generate("test/a/b/c/d/e/f");
 	root.generate("test/b");
 	root.generate("test/c");
-	root.generate("test/d");
+	root.generate("d");
 
-	node *d = root.at("test/a/b/c/d");
+	node *d = root.at("d");
 
-	property_value<double> *pvd0 = new property_value<double>("prop_test0");
-	property_value<double> *pvd1 = new property_value<double>("prop_test1");
+	property_value<double> *pvd0 = new property_value<double>("p0");
+	property_value<double> *pvd1 = new property_value<double>("p1");
 
 	pvd0->set_value(7);
 	pvd1->set_value(15);
