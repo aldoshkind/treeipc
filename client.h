@@ -117,6 +117,12 @@ public:
 	void					set_value						(const type &v)
 	{
 		//base_t::set_value(v);
+		// danger
+		if(v == get_value())
+		{
+			return;
+		}
+
 		if(is_deserialization_in_process() == false)
 		{
 			// report value changed
