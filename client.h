@@ -118,7 +118,7 @@ public:
 	{
 		//base_t::set_value(v);
 		// danger
-		if(v == get_value())
+		if(v == base_t::get_value())
 		{
 			return;
 		}
