@@ -236,6 +236,7 @@ public:
 	void					unsubscribe				(prid_t prid);
 
 	void					request_prop_set_value	(const property_base *p, const void *value);
+	void					request_add_property	(client_node *nd, property_base *prop);
 };
 
 
