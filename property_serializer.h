@@ -138,7 +138,7 @@ public:
         if(pd == nullptr) {
             return false;
         }
-        QString value(&buf[0]);
+        QString value((char*)&buf[0]);
         pd->set_value(value);
         /*
         property<type> *pd = dynamic_cast<property<type> *>(c);
@@ -156,12 +156,12 @@ public:
 
     bool						deserialize					(const buffer_t &buf, void *c) const
     {
-        if(buf.size() != sizeof(type))
-        {
-            return false;
-        }
-        memcpy(c, &buf[0], sizeof(type));
-        return true;
+        //if(buf.size() != sizeof(type))
+        //{
+        //    return false;
+        //}
+        //memcpy(c, &buf[0], sizeof(type));
+        return false;
     }
 };
 
