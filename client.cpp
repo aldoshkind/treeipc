@@ -1,5 +1,7 @@
 #include "client.h"
 
+#include <QString>
+
 /*constructor*/ client::client() : generator(this)
 {
 	dev = NULL;
@@ -156,9 +158,9 @@ client_node::ls_list_t client::ls(nid_t nid)
 
 int property_generator::init_property_factories()
 {
-	property_factories["std::string"] = new fake_property_factory<std::string>(cl);
 	property_factories[typeid(double).name()] = new fake_property_factory<double>(cl);
 	property_factories[typeid(int).name()] = new fake_property_factory<int>(cl);
+	property_factories[typeid(QString).name()] = new fake_property_factory<QString>(cl);
 
 	return 0;
 }
