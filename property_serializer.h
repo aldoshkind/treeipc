@@ -126,41 +126,32 @@ public:
     buffer_t					serialize					(const void *c) const
     {
         buffer_t buf;
-        //buf.resize(sizeof(type));
-        //memcpy(&buf[0], c, buf.size());
+		QString &value = *((QString *)c);
+		buf.resize(value.toStdString().size());
+		memcpy(&buf[0], value.toStdString().c_str(), value.toStdString().size());
 
         return buf;
     }
 
-    bool						deserialize					(const buffer_t &buf, property_base *c) const
-    {
-        property<QString> *pd = dynamic_cast<property<QString> *>(c);
-        if(pd == nullptr) {
-            return false;
-        }
-        QString value((char*)&buf[0]);
-        pd->set_value(value);
-        /*
-        property<type> *pd = dynamic_cast<property<type> *>(c);
-        if(pd == NULL || buf.size() != sizeof(type))
-        {
-            return false;
-        }
+	bool						deserialize					(const buffer_t &buf, property_base *c) const
+	{
+		property<QString> *pd = dynamic_cast<property<QString> *>(c);
+		if(pd == nullptr) {
+			return false;
+		}
+		QString value(std::string((char*)&buf[0], buf.size()).c_str());
+		pd->sync_value(value);
+		return true;
+	}
 
-        type val;
-        memcpy(&val, &buf[0], sizeof(val));
-        pd->set_value(val);
-        */
-        return true;
-    }
-
-    bool						deserialize					(const buffer_t &buf, void *c) const
-    {
-        //if(buf.size() != sizeof(type))
-        //{
-        //    return false;
-        //}
-        //memcpy(c, &buf[0], sizeof(type));
+	bool						deserialize					(const buffer_t &buf, void *c) const
+	{
+		if(c == nullptr)
+		{
+			return false;
+		}
+		QString &v = *((QString *)c);
+		v = QString(std::string((char*)&buf[0], buf.size()).c_str());
         return false;
     }
 };
