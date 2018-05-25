@@ -96,7 +96,6 @@ public:
 };
 
 
-template <class type>
 class serializer_qstring : public serializer_base
 {
 public:
