@@ -44,12 +44,14 @@ int main()
 
 	property_value<double> *pvd0 = new property_value<double>("p0");
 	property_value<double> *pvd1 = new property_value<double>("p1");
+	property_value<QString> *qstr_prop = new property_value<QString>("text");
 
 	pvd0->set_value(7);
 	pvd1->set_value(15);
 
 	d->add_property(pvd0);
 	d->add_property(pvd1);
+	d->add_property(qstr_prop);
 
 	sleep(10000);
 

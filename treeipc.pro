@@ -1,7 +1,7 @@
+QT += core
+
 TEMPLATE = app
 CONFIG += console c++11
-CONFIG -= app_bundle
-CONFIG -= qt
 
 SOURCES += main.cpp \
     tree/filepath_utils.cpp \
@@ -21,7 +21,6 @@ HEADERS += \
     tree/resource.h \
     tree/sinus_generator.h \
     tree/tree_node.h \
-    tree/widget.h \
     device.h \
     pseudodevice.h \
     server.h \
