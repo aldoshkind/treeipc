@@ -4,6 +4,9 @@
 #include <map>
 #include <typeinfo>
 
+
+#include <QString>
+
 #include "tree/node.h"
 
 class serializer_base
@@ -36,7 +39,7 @@ public:
 		//
 	}
 
-	/*destructor*/				~serializer_plain			()
+    /*destructor*/				~serializer_plain 			()
 	{
 		//
 	}
@@ -92,6 +95,79 @@ public:
 	}
 };
 
+
+template <class type>
+class serializer_qstring : public serializer_base
+{
+public:
+    /*constructor*/				serializer_qstring			()
+    {
+        //
+    }
+
+    /*destructor*/				~serializer_qstring			()
+    {
+        //
+    }
+
+    buffer_t					serialize					(property_base *c) const
+    {
+        buffer_t buf;
+        property<QString> *pd = dynamic_cast<property<QString> *>(c);
+        if(pd == NULL) {
+            return buf;
+        }
+        QString value = pd->get_value();
+
+        buf.resize(value.toStdString().size());
+        memcpy(&buf[0], value.toStdString().c_str(), value.toStdString().size());
+        return buf;
+    }
+
+    buffer_t					serialize					(const void *c) const
+    {
+        buffer_t buf;
+        //buf.resize(sizeof(type));
+        //memcpy(&buf[0], c, buf.size());
+
+        return buf;
+    }
+
+    bool						deserialize					(const buffer_t &buf, property_base *c) const
+    {
+        property<QString> *pd = dynamic_cast<property<QString> *>(c);
+        if(pd == nullptr) {
+            return false;
+        }
+        QString value(&buf[0]);
+        pd->set_value(value);
+        /*
+        property<type> *pd = dynamic_cast<property<type> *>(c);
+        if(pd == NULL || buf.size() != sizeof(type))
+        {
+            return false;
+        }
+
+        type val;
+        memcpy(&val, &buf[0], sizeof(val));
+        pd->set_value(val);
+        */
+        return true;
+    }
+
+    bool						deserialize					(const buffer_t &buf, void *c) const
+    {
+        if(buf.size() != sizeof(type))
+        {
+            return false;
+        }
+        memcpy(c, &buf[0], sizeof(type));
+        return true;
+    }
+};
+
+
+
 class serializer_machine
 {
 	typedef std::map<std::string, serializer_base *>		serializers_t;
@@ -102,6 +178,7 @@ class serializer_machine
 		add_plain_serializer<double>();
 		add_plain_serializer<float>();
 		add_plain_serializer<int>();
+        add_serializer("QString", new serializer_qstring);
 	}
 
 public:
