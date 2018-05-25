@@ -59,18 +59,18 @@ void client::process_notification(const device::package_t &p)
 	{
 	case CMD_AT_SUCCESS:
 	{
-		printf("CMD_AT_SUCCESS\n");
+		//printf("CMD_AT_SUCCESS\n");
 		client_node *n = new client_node(p.get_nid());
 		n->set_client(this);
 
 		tracked[p.get_nid()] = n;
-		printf("CMD_AT_SUCCESS 0\n");
+		//printf("CMD_AT_SUCCESS 0\n");
 	}
 	break;
 	case CMD_NEW_PROP:
-		printf("CMD_NEW_PROP\n");
+		//printf("CMD_NEW_PROP\n");
 		process_new_property(p);
-		printf("CMD_NEW_PROP 0\n");
+		//printf("CMD_NEW_PROP 0\n");
 	break;
 	case CMD_PROP_VALUE:
 		process_prop_value(p);
@@ -116,7 +116,7 @@ void client::process_new_property(const device::package_t &p)
 		return;
 	}
 
-	n->add_property(prop);
+	n->node::add_property(prop);
 }
 
 property_base *client::generate_property(std::string type, std::string name)
@@ -334,4 +334,9 @@ bool client::get_prop_prid(const property_base *p, prid_t &prid) const
 	}
 
 	return false;
+}
+
+void client::request_add_property(client_node *nd, property_base *prop)
+{
+//#error
 }

@@ -30,4 +30,6 @@ public:
 	node					*at						(std::string path);
 
 	void					set_client				(client *c);
+
+	property_base			*add_property			(property_base *p);
 };

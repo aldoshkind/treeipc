@@ -132,3 +132,9 @@ node *client_node::get(std::string path, bool create)
 
 	return cn->get(rest_of_path, create);
 }
+
+property_base *client_node::add_property(property_base *p)
+{
+	cl->request_add_property(this, p);
+	return NULL;
+}
