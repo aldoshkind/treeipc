@@ -177,7 +177,7 @@ class serializer_machine
 		add_plain_serializer<double>();
 		add_plain_serializer<float>();
 		add_plain_serializer<int>();
-        add_serializer("QString", new serializer_qstring);
+        add_serializer(typeid(QString).name(), new serializer_qstring);
 	}
 
 public:
