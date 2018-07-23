@@ -146,7 +146,7 @@ client_node::ls_list_t client::ls(nid_t nid)
 	uint32_t count = rep.read<uint32_t>(pos);
 	pos += sizeof(uint32_t);
 	res.reserve(count);
-	for(int i = 0 ; i < count ; i += 1)
+	for(uint32_t i = 0 ; i < count ; i += 1)
 	{
 		std::string name;
 		pos = read_string(rep, name, pos);
@@ -338,7 +338,7 @@ bool client::get_prop_prid(const property_base *p, prid_t &prid) const
 	return false;
 }
 
-void client::request_add_property(client_node *nd, property_base *prop)
+void client::request_add_property(client_node */*nd*/, property_base */*prop*/)
 {
 //#error
 }
