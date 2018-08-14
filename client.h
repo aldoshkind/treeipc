@@ -118,10 +118,10 @@ public:
 	{
 		//base_t::set_value(v);
 		// danger
-		if(v == base_t::get_value())
+		/*if(v == base_t::get_value())
 		{
 			return;
-		}
+		}*/
 
 		if(is_deserialization_in_process() == false)
 		{
