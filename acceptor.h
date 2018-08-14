@@ -42,7 +42,7 @@ public:
 		acc.async_accept(*socket.get(), f);
 	}
 
-	void connect_handler(const boost::system::error_code &error, socket_sp s, object_status::sp status)
+	void connect_handler(const boost::system::error_code &/*error*/, socket_sp s, object_status::sp status)
 	{
 		std::lock_guard<std::mutex> lg(status->mut);
 		if(status->is_ok() == false)

@@ -32,11 +32,11 @@ void server::child_added(node *n)
 		device::package_t pack;
 		pack.set_cmd('a');
 
-		int pos = 0;
+		//int pos = 0;
 
 		std::string item;
 		item = n->get_name();
-		pos = pack.size();
+		//pos = pack.size();
 
 		append_string(pack, item);
 
@@ -44,7 +44,7 @@ void server::child_added(node *n)
 	}
 }
 
-void server::child_removed(node *, std::string name)
+void server::child_removed(node *, std::string /*name*/)
 {
 	//
 }
@@ -342,11 +342,11 @@ void server::cmd_prop_value(const device::package_t &p)
 {
 	prid_t prid = p.get_prid();
 
-	printf("value for %d\n", prid);
+	printf("value for %d\n", (int)prid);
 
 	if(props.find(prid) == props.end())
 	{
-		printf("property with prid %d not found\n", prid);
+		printf("property with prid %d not found\n", (int)prid);
 		return;
 	}
 
