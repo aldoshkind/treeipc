@@ -17,21 +17,21 @@ class server : public device::listener, public tree_node::listener_t, public pro
 	typedef std::map<nid_t, tree_node *>		tracked_t;
 	tracked_t							tracked;
 
-	typedef std::map<prid_t, property_base *>		props_t;
-	props_t											props;
+/*	typedef std::map<prid_t, property_base *>		props_t;
+	props_t											props;*/
 
-	typedef std::set<prid_t>						props_subscribed_t;
-	props_subscribed_t								props_subscribed;
+	/*typedef std::set<prid_t>						props_subscribed_t;
+	props_subscribed_t								props_subscribed;*/
 
 	serializer_machine		serializer;
 
 	tree_node				*get_node			(nid_t nid);
-	property_base			*get_prop			(prid_t prid);
+	property_base			*get_prop			(nid_t prid);
 
 	nid_t					get_nid				(tree_node *n);
 	bool					get_nid				(tree_node *n, nid_t &nid, bool do_track = true);
 
-	bool					get_prid			(property_base *n, prid_t &prid);
+	bool					get_nid				(property_base *n, nid_t &nid);
 
 	void					cmd_at				(const device::package_t &p);
 	void					cmd_ls				(const device::package_t &p);
@@ -46,10 +46,10 @@ class server : public device::listener, public tree_node::listener_t, public pro
 	device					*dev;
 	tree_node				*target;
 	nid_t					current_nid;
-	prid_t					current_prid;
+	//prid_t					current_prid;
 
 	nid_t					generate_nid		();
-	prid_t					generate_prid		();
+	//prid_t					generate_prid		();
 	nid_t					do_track			(tree_node *n);
 	void					untrack				(tree_node */*n*/);
 

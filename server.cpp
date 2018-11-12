@@ -5,7 +5,7 @@
 	dev = NULL;
 	target = NULL;
 	current_nid = 0;
-	current_prid = 0;
+//	current_prid = 0;
 }
 
 /*constructor*/ server::server(device *d)
@@ -13,7 +13,7 @@
 	dev = NULL;
 	target = NULL;
 	current_nid = 0;
-	current_prid = 0;
+//	current_prid = 0;
 
 	set_device(d);
 }
@@ -237,8 +237,8 @@ bool server::get_nid(tree_node *n, nid_t &nid, bool track)
 		type = "std::string";
 	}
 
-	prid_t prid;
-	get_prid(prop, prid);
+	nid_t prid;
+	get_nid(prop, prid);
 
 	p.append(prid);
 	append_string(p, type);
@@ -254,9 +254,17 @@ nid_t server::get_nid(tree_node *n)
 	return nid;
 }
 
-bool server::get_prid(property_base *p, prid_t &prid)
+bool server::get_nid(property_base *p, nid_t &nid)
 {
-	for(props_t::iterator it = props.begin() ; it != props.end() ; ++it)
+	auto n = dynamic_cast<tree_node *>(p);
+	if(n == nullptr)
+	{
+		return false;
+	}
+	return get_nid(n, nid, false);
+
+
+	/*for(props_t::iterator it = props.begin() ; it != props.end() ; ++it)
 	{
 		if(it->second == p)
 		{
@@ -268,31 +276,33 @@ bool server::get_prid(property_base *p, prid_t &prid)
 	prid = generate_prid();
 	props[prid] = p;
 
-	return true;
+	return true;*/
+
+	return false;
 }
 
-prid_t server::generate_prid()
+/*nid_t server::generate_prid()
 {
 	return current_prid++;
-}
+}*/
 
 void server::cmd_get_prop(const device::package_t &p)
 {
-	prid_t prid = p.get_prid();
-	property_base *prop = get_prop(prid);
+	nid_t nid = p.get_nid();
+	property_base *prop = get_prop(nid);
 
 	device::package_t resp;
 	if(prop == NULL)
 	{
 		resp.set_cmd(CMD_PROP_GET_VALUE_ERROR);
-		resp.set_prid(p.get_prid());
+		resp.set_nid(p.get_nid());
 	}
 	else
 	{
 		serializer_base::buffer_t buf = serializer.serialize(prop);
 
 		resp.set_cmd(CMD_PROP_GET_VALUE_SUCCESS);
-		resp.set_prid(prid);
+		resp.set_nid(nid);
 
 		resp.append<uint32_t>(buf.size());
 		resp.append(&(buf[0]), buf.size());
@@ -300,47 +310,61 @@ void server::cmd_get_prop(const device::package_t &p)
 	dev->reply(p, resp);
 }
 
-property_base *server::get_prop(prid_t prid)
+/*property_base *server::get_prop(nid_t prid)
 {
 	props_t::iterator it = props.find(prid);
 	return (it == props.end()) ? NULL : it->second;
+}*/
+
+property_base *server::get_prop(nid_t nid)
+{
+	tracked_t::iterator it = tracked.find(nid);
+	if(it == tracked.end())
+	{
+		return nullptr;
+	}
+
+	property_base *pb = dynamic_cast<property_base *>(it->second);
+
+	return pb;
 }
 
 void server::cmd_subscribe(const device::package_t &p, bool erase)
 {
-	const prid_t &pr = p.get_prid();
-	props_t::iterator it = props.find(pr);
-	if(it == props.end())
+	const nid_t &nid = p.get_nid();
+
+	auto *pb = get_prop(nid);
+	if(pb == nullptr)
 	{
 		return;
 	}
 
 	if(erase == false)
 	{
-		props_subscribed.insert(pr);
-		it->second->add_listener(this);
+		//props_subscribed.insert(nid);
+		pb->add_listener(this);
 	}
 	else
 	{
-		props_subscribed.erase(pr);
-		it->second->remove_listener(this);
+		//props_subscribed.erase(nid);
+		pb->remove_listener(this);
 	}
 }
 
 void server::updated(property_base *prop)
 {
-	prid_t prid;
-	get_prid(prop, prid);
-	if(props_subscribed.find(prid) == props_subscribed.end())
+	nid_t nid;
+	get_nid(prop, nid);
+	/*if(props_subscribed.find(prid) == props_subscribed.end())
 	{
 		return;
-	}
+	}*/
 
 	device::package_t resp;
 	serializer_base::buffer_t buf = serializer.serialize(prop);
 
 	resp.set_cmd(CMD_PROP_VALUE_UPDATED);
-	resp.set_prid(prid);
+	resp.set_nid(nid);
 
 	resp.append<uint32_t>(buf.size());
 	resp.append(&(buf[0]), buf.size());
@@ -350,17 +374,17 @@ void server::updated(property_base *prop)
 
 void server::cmd_prop_value(const device::package_t &p)
 {
-	prid_t prid = p.get_prid();
+	nid_t nid = p.get_nid();
 
-	printf("value for %d\n", prid);
+	printf("value for %d\n", nid);
 
-	if(props.find(prid) == props.end())
+	property_base *pb = dynamic_cast<property_base *>(tracked[nid]);
+
+	if(pb == nullptr)
 	{
-		printf("property with prid %d not found\n", prid);
+		printf("%s: node with prid %d not found\n", __PRETTY_FUNCTION__, nid);
 		return;
 	}
-
-	property_base *pb = props[prid];
 
 	serializer_base::buffer_t buf;
 	buf.resize(p.data_size());

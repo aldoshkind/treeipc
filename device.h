@@ -9,7 +9,6 @@
 
 typedef uint64_t	unique_id_t;			// unique id
 typedef unique_id_t		nid_t;			// node id
-typedef unique_id_t		prid_t;			// prop id
 typedef uint8_t		cmd_t;
 
 enum CMD
@@ -34,11 +33,7 @@ class package : private std::vector<uint8_t>
 {
 	typedef std::vector<uint8_t> base_t;
 
-	union
-	{
-		nid_t						*nid;
-		prid_t						*prid;
-	};
+	nid_t						*nid;
 	cmd_t						*cmd;
 	size_type					header_size;
 
@@ -144,11 +139,6 @@ public:
 		return *nid;
 	}
 
-	nid_t					get_prid					() const
-	{
-		return *prid;
-	}
-
 	cmd_t					get_cmd					() const
 	{
 		return *cmd;
@@ -162,11 +152,6 @@ public:
 	void					set_nid					(nid_t n)
 	{
 		*nid = n;
-	}
-
-	void					set_prid				(nid_t n)
-	{
-		*prid = n;
 	}
 
 	using base_t::size;

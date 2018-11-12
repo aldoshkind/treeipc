@@ -5,7 +5,7 @@
 #include "device.h"
 #include "package.h"
 
-//#include "client_node.h"
+#include "client_node.h"
 #include "property_serializer.h"
 
 class client;
@@ -14,7 +14,7 @@ class client_node;
 class proxy_node_factory_base
 {
 public:
-	virtual property_base	*generate					(std::string name) = 0;
+	virtual client_node		*generate						(std::string name) = 0;
 
 	virtual /*destructor*/	~proxy_node_factory_base		() {}
 };
@@ -25,10 +25,10 @@ public:
 
 
 
-/*
+
 class property_fake
 {
-	prid_t					prid;
+	nid_t					nid;
 
 	bool					deserialization_in_process;
 	client					*cl;
@@ -44,16 +44,6 @@ public:
 		//
 	}
 
-	void					set_prid				(prid_t p)
-	{
-		prid = p;
-	}
-
-	prid_t					get_prid				() const
-	{
-		return prid;
-	}
-
 	void					set_deserialization				(bool in_process)
 	{
 		deserialization_in_process = in_process;
@@ -64,17 +54,30 @@ public:
 		return deserialization_in_process;
 	}
 
+	void					set_client					(client *c)
+	{
+		cl = c;
+	}
+
+	void					set_nid						(nid_t n)
+	{
+		nid = n;
+	}
+
+	nid_t					get_nid						() const
+	{
+		return nid;
+	}
+
 	void					update_value				() const;
 	void					subscribe					() const;
 	void					unsubscribe					() const;
 	void					request_set					(const void *value) const;
 };
-*/
 
 
 
 
-/*
 
 template <class type>
 class property_value_fake : public property_value<type>, public property_fake
@@ -82,7 +85,7 @@ class property_value_fake : public property_value<type>, public property_fake
 	typedef property_value<type>		base_t;
 
 public:
-	property_value_fake				(std::string name, client *c) : base_t(name), property_fake(c)
+	property_value_fake				() : property_fake(nullptr)
 	{
 		//
 	}
@@ -90,11 +93,6 @@ public:
 	~property_value_fake			()
 	{
 		//
-	}
-
-	void					set_client						(client *c)
-	{
-		cl = c;
 	}
 
 	void					add_listener					(property_listener *l)
@@ -117,12 +115,13 @@ public:
 
 	void					set_value						(const type &v)
 	{
-		//base_t::set_value(v);
+		base_t::set_value(v);
+		/*
 		// danger
 		if(v == base_t::get_value())
 		{
 			return;
-		}
+		}*/
 
 		if(is_deserialization_in_process() == false)
 		{
@@ -131,18 +130,32 @@ public:
 		}
 	}
 
-	type					get_value						() const;
+	type					get_value						() const
+	{
+		update_value();
+		return property_value<type>::get_value();
+	}
 
 	using base_t::operator =;
 };
 
 
 
+template <class T>
+class client_node_value : public client_node, public T
+{
+public:
+	client_node_value(nid_t n = 0) : client_node(n)
+	{
+		//
+	}
 
-*/
-
-
-
+	void set_nid(nid_t nid)
+	{
+		T::set_nid(nid);
+		client_node::set_nid(nid);
+	}
+};
 
 
 template <class T>
@@ -161,30 +174,32 @@ public:
 		//
 	}
 
-	property_base			*generate			(std::string name)
+	client_node				*generate			(std::string name)
 	{
-		//return new property_value_fake<T>(name, cl);
-		return nullptr;
+		auto node = new client_node_value<property_value_fake<T>>();
+		node->property_value_fake<T>::set_client(cl);
+		node->client_node::set_client(cl);
+		return node;
 	}
 };
 
 
 
 
-class property_generator
+class proxy_node_generator
 {
 	client					*cl;
 
-	int						init_property_factories		();
+	int						init_factories		();
 
 	typedef std::map<std::string, proxy_node_factory_base *>		property_factories_t;
 	property_factories_t											property_factories;
 
 public:
-	/*constructor*/			property_generator			(client *c);
-	/*destructor*/			~property_generator			();
+	/*constructor*/			proxy_node_generator			(client *c);
+	/*destructor*/			~proxy_node_generator			();
 
-	property_base			*generate					(std::string type, std::string name);
+	client_node *generate(std::string type, std::string name);
 };
 
 
@@ -207,27 +222,27 @@ class client : public device::listener
 	device					*dev;
 	client_node				*root_node;
 
-	property_generator		generator;
+	proxy_node_generator	generator;
 	serializer_machine		serializer;
 
 	typedef std::map<nid_t, client_node *>		tracked_t;
 	tracked_t									tracked;
 	std::mutex									tracked_mutex;
 
-	typedef std::map<prid_t, property_base *>		props_t;
-	props_t											props;
+	/*typedef std::map<prid_t, property_base *>		props_t;
+	props_t											props;*/
 
 	void					process_notification	(const device::package_t &p);
 	client_node				*fetch_node				(nid_t nid, std::string name);
 
-	tree_node::ls_list_t	ls						(nid_t nid);
+	client_node::ls_list_t	ls						(nid_t nid);
 
 	void					process_new_property	(const device::package_t &p);
 	void					process_prop_value		(const device::package_t &p);
 
-	property_base			*generate_property		(std::string type, std::string name);
+	//property_base			*generate_property		(std::string type, std::string name);
 
-	bool					get_prop_prid			(const property_base *p, prid_t &prid) const;
+	bool					get_prop_nid			(const property_base *p, nid_t &prid) const;
 
 public:
 	/*constructor*/			client					();
@@ -235,10 +250,10 @@ public:
 
 	void					set_device				(device *d);
 	client_node				*get_root				();
-	void					update_prop				(prid_t prid);
+	void					update_prop				(nid_t prid);
 
-	void					subscribe				(prid_t prid);
-	void					unsubscribe				(prid_t prid);
+	void					subscribe				(nid_t prid);
+	void					unsubscribe				(nid_t prid);
 
 	void					request_prop_set_value	(const property_base *p, const void *value);
 	void					request_add_property	(client_node *nd, property_base *prop);

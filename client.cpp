@@ -20,7 +20,7 @@ void client::set_device(device *d)
 	dev = d;
 }
 
-tree_node *client::get_root()
+client_node *client::get_root()
 {
 	if(root_node != NULL)
 	{
@@ -30,7 +30,7 @@ tree_node *client::get_root()
 	return root_node;
 }
 
-tree_node *client::fetch_node(nid_t nid, std::string name)
+client_node *client::fetch_node(nid_t nid, std::string name)
 {
 	device::package_t req, rep;
 	req.set_cmd(CMD_AT);
@@ -48,9 +48,14 @@ tree_node *client::fetch_node(nid_t nid, std::string name)
 	std::string type;
 	read_string(rep, type);
 
-	auto cl = new client_node(rep.get_nid());
+	auto cl = generator.generate(type, name);
 
+	if(cl == nullptr)
+	{
+		return nullptr;
+	}
 
+	cl->set_nid(rep.get_nid());
 	tracked[rep.get_nid()] = cl;
 	cl->set_client(this);
 
@@ -128,12 +133,12 @@ void client::process_notification(const device::package_t &p)
 	n->node::add_property(prop);
 }*/
 
-property_base *client::generate_property(std::string type, std::string name)
+/*property_base *client::generate_property(std::string type, std::string name)
 {
 	return generator.generate(type, name);
-}
+}*/
 
-tree_node::ls_list_t client::ls(nid_t nid)
+client_node::ls_list_t client::ls(nid_t nid)
 {
 	device::package_t req;
 	req.set_cmd(CMD_LS);
@@ -144,10 +149,10 @@ tree_node::ls_list_t client::ls(nid_t nid)
 
 	if(rep.get_cmd() != CMD_LS_SUCCESS)
 	{
-		return tree_node::ls_list_t();
+		return client_node::ls_list_t();
 	}
 
-	tree_node::ls_list_t res;
+	client_node::ls_list_t res;
 
 	int pos = 0;
 	uint32_t count = rep.read<uint32_t>(pos);
@@ -163,8 +168,26 @@ tree_node::ls_list_t client::ls(nid_t nid)
 	return res;
 }
 
-int property_generator::init_property_factories()
+class untyped_node_factory : public proxy_node_factory_base
 {
+	client *cl;
+public:
+	untyped_node_factory(client *c) : cl(c)
+	{
+		//
+	}
+
+	client_node		*generate			(std::string name)
+	{
+		auto n = new client_node();
+		n->set_client(cl);
+		return n;
+	}
+};
+
+int proxy_node_generator::init_factories()
+{
+	property_factories[""] = new untyped_node_factory(cl);
 	property_factories[typeid(double).name()] = new proxy_node_factory<double>(cl);
 	property_factories[typeid(int).name()] = new proxy_node_factory<int>(cl);
 	property_factories[typeid(QString).name()] = new proxy_node_factory<QString>(cl);
@@ -173,17 +196,17 @@ int property_generator::init_property_factories()
 }
 
 
-/*constructor*/ property_generator::property_generator(client *c) : cl(c)
+/*constructor*/ proxy_node_generator::proxy_node_generator(client *c) : cl(c)
 {
-	init_property_factories();
+	init_factories();
 }
 
-/*destructor*/ property_generator::~property_generator()
+/*destructor*/ proxy_node_generator::~proxy_node_generator()
 {
 	//
 }
 
-property_base *property_generator::generate(std::string type, std::string name)
+client_node *proxy_node_generator::generate(std::string type, std::string name)
 {
 	property_factories_t::iterator it = property_factories.find(type);
 	if(it == property_factories.end())
@@ -194,17 +217,30 @@ property_base *property_generator::generate(std::string type, std::string name)
 	return it->second->generate(name);
 }
 
-/*void client::update_prop(prid_t prid)
+void client::update_prop(nid_t nid)
 {
 	device::package_t req, rep;
 
-	req.set_prid(prid);
+	req.set_nid(nid);
 	req.set_cmd(CMD_PROP_GET_VALUE);
 
 	dev->send(req, rep);
 
-	props_t::iterator it = props.find(prid);
+	/*props_t::iterator it = props.find(prid);
 	if(it == props.end())
+	{
+		return;
+	}*/
+
+	tracked_t::iterator it = tracked.find(nid);
+	if(it == tracked.end())
+	{
+		return;
+	}
+
+	auto prop = dynamic_cast<property_base *>(it->second);
+
+	if(prop == nullptr)
 	{
 		return;
 	}
@@ -220,7 +256,7 @@ property_base *property_generator::generate(std::string type, std::string name)
 		pvf->set_deserialization(true);
 	}
 
-	serializer.deserialize(buf, it->second);
+	serializer.deserialize(buf, prop);
 
 	if(pvf != NULL)
 	{
@@ -228,41 +264,41 @@ property_base *property_generator::generate(std::string type, std::string name)
 	}
 
 	return;
-}*/
+}
 
-void client::subscribe(prid_t prid)
+void client::subscribe(nid_t nid)
 {
 	device::package_t req;
 
-	req.set_prid(prid);
+	req.set_nid(nid);
 	req.set_cmd(CMD_SUBSCRIBE);
 
 	dev->write(req);
 }
 
-void client::unsubscribe(prid_t prid)
+void client::unsubscribe(nid_t nid)
 {
 	device::package_t req;
 
-	req.set_prid(prid);
+	req.set_nid(nid);
 	req.set_cmd(CMD_UNSUBSCRIBE);
 
 	dev->write(req);
 }
 
-/*void property_fake::update_value() const
+void property_fake::update_value() const
 {
-	cl->update_prop(get_prid());
+	cl->update_prop(get_nid());
 }
 
 void property_fake::subscribe() const
 {
-	cl->subscribe(get_prid());
+	cl->subscribe(get_nid());
 }
 
 void property_fake::unsubscribe() const
 {
-	cl->unsubscribe(get_prid());
+	cl->unsubscribe(get_nid());
 }
 
 void property_fake::request_set(const void *value) const
@@ -275,7 +311,7 @@ void property_fake::request_set(const void *value) const
 	}
 
 	cl->request_prop_set_value(pb, value);
-}*/
+}
 
 void client::process_prop_value(const device::package_t &p)
 {
@@ -318,22 +354,32 @@ void client::request_prop_set_value(const property_base *p, const void *value)
 
 	device::package_t req;
 
-	prid_t prid = 0;
-	if(get_prop_prid(p, prid) == false)
+	nid_t nid = 0;
+	if(get_prop_nid(p, nid) == false)
 	{
 		return;
 	}
 
-	req.set_prid(prid);
+	req.set_nid(nid);
 	req.set_cmd(CMD_PROP_SET_VALUE);
 	req.append(&(buf[0]), buf.size());
 
 	dev->write(req);
 }
 
-bool client::get_prop_prid(const property_base *p, prid_t &prid) const
+bool client::get_prop_nid(const property_base *p, nid_t &nid) const
 {
-	for(props_t::const_iterator it = props.begin() ; it != props.end() ; ++it)
+	auto pr = dynamic_cast<const property_fake *>(p);
+	if(pr == nullptr)
+	{
+		return false;
+	}
+
+	nid = pr->get_nid();
+
+	return true;
+
+	/*for(props_t::const_iterator it = props.begin() ; it != props.end() ; ++it)
 	{
 		if(it->second == p)
 		{
@@ -342,7 +388,7 @@ bool client::get_prop_prid(const property_base *p, prid_t &prid) const
 		}
 	}
 
-	return false;
+	return false;*/
 }
 
 void client::request_add_property(client_node *nd, property_base *prop)
