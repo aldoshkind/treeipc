@@ -4,23 +4,19 @@ TEMPLATE = app
 CONFIG += console c++11
 
 SOURCES += main.cpp \
-    tree/filepath_utils.cpp \
-    tree/resource.cpp \
     client_node.cpp \
     server.cpp \
     client.cpp \
     package.cpp \
-    tree/property_listener.cpp \
     io_service.cpp \
-    socket_client.cpp
+    socket_client.cpp \
+    ../tree/filepath_utils.cpp \
+    ../tree/property_listener.cpp \
+    ../tree/resource.cpp \
+    ../tree/tree_node.cpp \
+    ../tree/tree_node_inherited.cpp
 
 HEADERS += \
-    tree/event_printer.h \
-    tree/filepath_utils.h \
-    tree/node.h \
-    tree/resource.h \
-    tree/sinus_generator.h \
-    tree/tree_node.h \
     device.h \
     pseudodevice.h \
     server.h \
@@ -29,9 +25,14 @@ HEADERS += \
     client_node.h \
     property_serializer.h \
     socket_device.h \
-    tree/property_listener.h \
     io_service.h \
     acceptor.h \
-    conn_server.h
+    conn_server.h \
+    ../tree/filepath_utils.h \
+    ../tree/property_listener.h \
+    ../tree/resource.h \
+    ../tree/tree_node.h
+
+INCLUDEPATH += ../
 
 LIBS += -pthread -lboost_system

@@ -2,7 +2,7 @@
 
 #include "acceptor.h"
 #include "socket_device.h"
-#include "tree/node.h"
+#include "tree/tree_node.h"
 #include "server.h"
 
 class conn_server : public acceptor::listener
@@ -18,7 +18,7 @@ class conn_server : public acceptor::listener
 		server srv;
 
 	public:
-		client(socket_sp socket, node *n) : sc(socket), sd(&sc), srv(&sd)
+		client(socket_sp socket, tree_node *n) : sc(socket), sd(&sc), srv(&sd)
 		{
 			srv.set_target(n);
 			sd.set_listener(&srv);
@@ -29,10 +29,10 @@ class conn_server : public acceptor::listener
 	typedef std::map<socket_sp::element_type *, client_sp> clients_t;
 	clients_t clients;
 
-	node *root;
+	tree_node *root;
 
 public:
-	conn_server(node *r) : state(new object_status)
+	conn_server(tree_node *r) : state(new object_status)
 	{
 		root = r;
 

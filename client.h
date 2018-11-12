@@ -5,26 +5,27 @@
 #include "device.h"
 #include "package.h"
 
-#include "client_node.h"
+//#include "client_node.h"
 #include "property_serializer.h"
 
-class property_factory_base
+class client;
+class client_node;
+
+class proxy_node_factory_base
 {
 public:
 	virtual property_base	*generate					(std::string name) = 0;
 
-	virtual /*destructor*/	~property_factory_base		() {}
+	virtual /*destructor*/	~proxy_node_factory_base		() {}
 };
 
-class client;
 
 
 
 
 
 
-
-
+/*
 class property_fake
 {
 	prid_t					prid;
@@ -33,12 +34,12 @@ class property_fake
 	client					*cl;
 
 public:
-	/*constructor*/			property_fake			(client *c) : cl(c)
+				property_fake			(client *c) : cl(c)
 	{
 		deserialization_in_process = false;
 	}
 
-	virtual /*destructor*/	~property_fake			()
+	virtual 	~property_fake			()
 	{
 		//
 	}
@@ -68,12 +69,12 @@ public:
 	void					unsubscribe					() const;
 	void					request_set					(const void *value) const;
 };
+*/
 
 
 
 
-
-
+/*
 
 template <class type>
 class property_value_fake : public property_value<type>, public property_fake
@@ -81,12 +82,12 @@ class property_value_fake : public property_value<type>, public property_fake
 	typedef property_value<type>		base_t;
 
 public:
-	/*constructor*/			property_value_fake				(std::string name, client *c) : base_t(name), property_fake(c)
+	property_value_fake				(std::string name, client *c) : base_t(name), property_fake(c)
 	{
 		//
 	}
 
-	/*destructor*/			~property_value_fake			()
+	~property_value_fake			()
 	{
 		//
 	}
@@ -138,33 +139,37 @@ public:
 
 
 
+*/
 
 
 
 
 
-
-template <class type>
-class fake_property_factory : public property_factory_base
+template <class T>
+class proxy_node_factory : public proxy_node_factory_base
 {
 	client					*cl;
 
 public:
-	/*constructor*/			fake_property_factory	(client *c) : cl(c)
+	/*constructor*/			proxy_node_factory	(client *c) : cl(c)
 	{
 		//
 	}
 
-	/*destructor*/			~fake_property_factory	()
+	/*destructor*/			~proxy_node_factory	()
 	{
 		//
 	}
 
 	property_base			*generate			(std::string name)
 	{
-		return new property_value_fake<type>(name, cl);
+		//return new property_value_fake<T>(name, cl);
+		return nullptr;
 	}
 };
+
+
+
 
 class property_generator
 {
@@ -172,8 +177,8 @@ class property_generator
 
 	int						init_property_factories		();
 
-	typedef std::map<std::string, property_factory_base *>	property_factories_t;
-	property_factories_t									property_factories;
+	typedef std::map<std::string, proxy_node_factory_base *>		property_factories_t;
+	property_factories_t											property_factories;
 
 public:
 	/*constructor*/			property_generator			(client *c);
@@ -215,7 +220,7 @@ class client : public device::listener
 	void					process_notification	(const device::package_t &p);
 	client_node				*fetch_node				(nid_t nid, std::string name);
 
-	client_node::ls_list_t	ls						(nid_t nid);
+	tree_node::ls_list_t	ls						(nid_t nid);
 
 	void					process_new_property	(const device::package_t &p);
 	void					process_prop_value		(const device::package_t &p);
@@ -253,10 +258,11 @@ public:
 
 
 
-
+/*
 template <class type>
 type property_value_fake<type>::get_value() const
 {
 	update_value();
 	return base_t::get_value();
 }
+*/

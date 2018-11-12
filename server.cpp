@@ -23,7 +23,7 @@
 	//
 }
 
-void server::child_added(node *n)
+void server::child_added(tree_node *n)
 {
 	printf("child added %s\n", n->get_name().c_str());
 
@@ -44,7 +44,7 @@ void server::child_added(node *n)
 	}
 }
 
-void server::child_removed(node *, std::string name)
+void server::child_removed(tree_node *, std::string name)
 {
 	//
 }
@@ -54,19 +54,19 @@ nid_t server::generate_nid()
 	return current_nid++;
 }
 
-nid_t server::do_track(node *n)
+nid_t server::do_track(tree_node *n)
 {
 	nid_t nid = generate_nid();
 	tracked[nid] = n;
 	return nid;
 }
 
-void server::untrack(node */*n*/)
+void server::untrack(tree_node */*n*/)
 {
 	//
 }
 
-void server::set_target(node *t)
+void server::set_target(tree_node *t)
 {
 	target = t;
 	if(t != NULL)
@@ -88,7 +88,7 @@ void server::set_device(device *d)
 void server::cmd_ls(const device::package_t &p)
 {
 	nid_t nid = p.get_nid();
-	node *t = get_node(nid);
+	tree_node *t = get_node(nid);
 	device::package_t resp;
 	if(t == NULL)
 	{
@@ -97,7 +97,7 @@ void server::cmd_ls(const device::package_t &p)
 	}
 	else
 	{
-		node::ls_list_t list = t->ls();
+		tree_node::ls_list_t list = t->ls();
 
 		resp.set_cmd(CMD_LS_SUCCESS);
 		resp.set_nid(nid);
@@ -121,7 +121,7 @@ void server::process_notification(const device::package_t &p)
 	case CMD_LS:
 		cmd_ls(p);
 	break;
-	case CMD_PROP_UPDATE:
+	case CMD_PROP_GET_VALUE:
 		cmd_get_prop(p);
 	break;
 	case CMD_SUBSCRIBE:
@@ -141,8 +141,8 @@ void server::process_notification(const device::package_t &p)
 void server::cmd_at(const device::package_t &p)
 {
 	nid_t nid = p.get_nid();
-	node *t = get_node(nid);
-	node *n = NULL;
+	tree_node *t = get_node(nid);
+	tree_node *n = NULL;
 	device::package_t resp;
 	if(t == NULL)
 	{
@@ -166,23 +166,33 @@ void server::cmd_at(const device::package_t &p)
 			nid_t nid = get_nid(n);
 			resp.set_cmd(CMD_AT_SUCCESS);
 			resp.set_nid(nid);
+
+			auto prop = dynamic_cast<property_base *>(n);
+			if(prop != nullptr)
+			{
+				append_string(resp, prop->get_type());
+			}
+			else
+			{
+				append_string(resp, "");
+			}
 		}
 	}
 	dev->reply(p, resp);
 
 	if(n != NULL)
 	{
-		n->resource::add_listener(this);
+		n->add_listener(this);
 	}
 }
 
-node *server::get_node(nid_t nid)
+tree_node *server::get_node(nid_t nid)
 {
 	tracked_t::iterator it = tracked.find(nid);
 	return (it == tracked.end()) ? NULL : it->second;
 }
 
-bool server::get_nid(node *n, nid_t &nid, bool track)
+bool server::get_nid(tree_node *n, nid_t &nid, bool track)
 {
 	for(tracked_t::iterator it = tracked.begin() ; it != tracked.end() ; ++it)
 	{
@@ -201,9 +211,9 @@ bool server::get_nid(node *n, nid_t &nid, bool track)
 	return false;
 }
 
-void server::new_property(resource *r, property_base *prop)
+/*void server::new_property(resource *r, property_base *prop)
 {
-	node *n = dynamic_cast<node *>(r);
+	tree_node_t *n = dynamic_cast<tree_node_t *>(r);
 
 	if(n == NULL)
 	{
@@ -235,9 +245,9 @@ void server::new_property(resource *r, property_base *prop)
 	append_string(p, prop->get_name());
 
 	dev->write(p);
-}
+}*/
 
-nid_t server::get_nid(node *n)
+nid_t server::get_nid(tree_node *n)
 {
 	nid_t nid;
 	get_nid(n, nid, true);
@@ -274,14 +284,14 @@ void server::cmd_get_prop(const device::package_t &p)
 	device::package_t resp;
 	if(prop == NULL)
 	{
-		resp.set_cmd(CMD_PROP_UPDATE_ERROR);
+		resp.set_cmd(CMD_PROP_GET_VALUE_ERROR);
 		resp.set_prid(p.get_prid());
 	}
 	else
 	{
 		serializer_base::buffer_t buf = serializer.serialize(prop);
 
-		resp.set_cmd(CMD_PROP_UPDATE_SUCCESS);
+		resp.set_cmd(CMD_PROP_GET_VALUE_SUCCESS);
 		resp.set_prid(prid);
 
 		resp.append<uint32_t>(buf.size());
@@ -329,7 +339,7 @@ void server::updated(property_base *prop)
 	device::package_t resp;
 	serializer_base::buffer_t buf = serializer.serialize(prop);
 
-	resp.set_cmd(CMD_PROP_VALUE);
+	resp.set_cmd(CMD_PROP_VALUE_UPDATED);
 	resp.set_prid(prid);
 
 	resp.append<uint32_t>(buf.size());

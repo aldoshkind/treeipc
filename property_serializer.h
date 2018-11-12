@@ -7,7 +7,8 @@
 
 #include <QString>
 
-#include "tree/node.h"
+#include "tree/tree_node.h"
+#include "tree/resource.h"
 
 class serializer_base
 {

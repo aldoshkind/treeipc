@@ -2,6 +2,8 @@
 
 #include <QString>
 
+#include "client_node.h"
+
 /*constructor*/ client::client() : generator(this)
 {
 	dev = NULL;
@@ -18,7 +20,7 @@ void client::set_device(device *d)
 	dev = d;
 }
 
-client_node *client::get_root()
+tree_node *client::get_root()
 {
 	if(root_node != NULL)
 	{
@@ -28,7 +30,7 @@ client_node *client::get_root()
 	return root_node;
 }
 
-client_node *client::fetch_node(nid_t nid, std::string name)
+tree_node *client::fetch_node(nid_t nid, std::string name)
 {
 	device::package_t req, rep;
 	req.set_cmd(CMD_AT);
@@ -43,7 +45,12 @@ client_node *client::fetch_node(nid_t nid, std::string name)
 		return NULL;
 	}
 
+	std::string type;
+	read_string(rep, type);
+
 	auto cl = new client_node(rep.get_nid());
+
+
 	tracked[rep.get_nid()] = cl;
 	cl->set_client(this);
 
@@ -69,12 +76,12 @@ void client::process_notification(const device::package_t &p)
 		//printf("CMD_AT_SUCCESS 0\n");
 	}
 	break;
-	case CMD_NEW_PROP:
+	//case CMD_NEW_PROP:
 		//printf("CMD_NEW_PROP\n");
-		process_new_property(p);
+		//process_new_property(p);
 		//printf("CMD_NEW_PROP 0\n");
 	break;
-	case CMD_PROP_VALUE:
+	case CMD_PROP_VALUE_UPDATED:
 		process_prop_value(p);
 	break;
 	default:
@@ -82,7 +89,7 @@ void client::process_notification(const device::package_t &p)
 	}
 }
 
-void client::process_new_property(const device::package_t &p)
+/*void client::process_new_property(const device::package_t &p)
 {
 	std::lock_guard<std::mutex> lg(tracked_mutex);
 	tracked_t::iterator it = tracked.find(p.get_nid());
@@ -101,7 +108,7 @@ void client::process_new_property(const device::package_t &p)
 	read_string(p, name, pos);
 	printf("new prop %s %s\n", type.c_str(), name.c_str());
 
-	node *n = it->second;
+	tree_node_t *n = it->second;
 
 	property_base *prop = generate_property(type, name);
 	property_fake *pf = dynamic_cast<property_fake *>(prop);
@@ -119,14 +126,14 @@ void client::process_new_property(const device::package_t &p)
 	}
 
 	n->node::add_property(prop);
-}
+}*/
 
 property_base *client::generate_property(std::string type, std::string name)
 {
 	return generator.generate(type, name);
 }
 
-client_node::ls_list_t client::ls(nid_t nid)
+tree_node::ls_list_t client::ls(nid_t nid)
 {
 	device::package_t req;
 	req.set_cmd(CMD_LS);
@@ -137,10 +144,10 @@ client_node::ls_list_t client::ls(nid_t nid)
 
 	if(rep.get_cmd() != CMD_LS_SUCCESS)
 	{
-		return client_node::ls_list_t();
+		return tree_node::ls_list_t();
 	}
 
-	client_node::ls_list_t res;
+	tree_node::ls_list_t res;
 
 	int pos = 0;
 	uint32_t count = rep.read<uint32_t>(pos);
@@ -158,9 +165,9 @@ client_node::ls_list_t client::ls(nid_t nid)
 
 int property_generator::init_property_factories()
 {
-	property_factories[typeid(double).name()] = new fake_property_factory<double>(cl);
-	property_factories[typeid(int).name()] = new fake_property_factory<int>(cl);
-	property_factories[typeid(QString).name()] = new fake_property_factory<QString>(cl);
+	property_factories[typeid(double).name()] = new proxy_node_factory<double>(cl);
+	property_factories[typeid(int).name()] = new proxy_node_factory<int>(cl);
+	property_factories[typeid(QString).name()] = new proxy_node_factory<QString>(cl);
 
 	return 0;
 }
@@ -187,12 +194,12 @@ property_base *property_generator::generate(std::string type, std::string name)
 	return it->second->generate(name);
 }
 
-void client::update_prop(prid_t prid)
+/*void client::update_prop(prid_t prid)
 {
 	device::package_t req, rep;
 
 	req.set_prid(prid);
-	req.set_cmd(CMD_PROP_UPDATE);
+	req.set_cmd(CMD_PROP_GET_VALUE);
 
 	dev->send(req, rep);
 
@@ -221,7 +228,7 @@ void client::update_prop(prid_t prid)
 	}
 
 	return;
-}
+}*/
 
 void client::subscribe(prid_t prid)
 {
@@ -243,7 +250,7 @@ void client::unsubscribe(prid_t prid)
 	dev->write(req);
 }
 
-void property_fake::update_value() const
+/*void property_fake::update_value() const
 {
 	cl->update_prop(get_prid());
 }
@@ -268,11 +275,11 @@ void property_fake::request_set(const void *value) const
 	}
 
 	cl->request_prop_set_value(pb, value);
-}
+}*/
 
 void client::process_prop_value(const device::package_t &p)
 {
-	const prid_t &prid = p.get_prid();
+	/*const prid_t &prid = p.get_prid();
 	props_t::iterator it = props.find(prid);
 	if(it == props.end())
 	{
@@ -296,7 +303,7 @@ void client::process_prop_value(const device::package_t &p)
 	{
 		pvf->set_deserialization(false);
 	}
-	it->second->notify_change();
+	it->second->notify_change();*/
 }
 
 
