@@ -73,18 +73,12 @@ void client::process_notification(const device::package_t &p)
 	{
 	case CMD_AT_SUCCESS:
 	{
-		//printf("CMD_AT_SUCCESS\n");
 		client_node *n = new client_node(p.get_nid());
 		n->set_client(this);
 
 		tracked[p.get_nid()] = n;
-		//printf("CMD_AT_SUCCESS 0\n");
 	}
 	break;
-	//case CMD_NEW_PROP:
-		//printf("CMD_NEW_PROP\n");
-		//process_new_property(p);
-		//printf("CMD_NEW_PROP 0\n");
 	break;
 	case CMD_PROP_VALUE_UPDATED:
 		process_prop_value(p);
@@ -158,7 +152,7 @@ client_node::ls_list_t client::ls(nid_t nid)
 	uint32_t count = rep.read<uint32_t>(pos);
 	pos += sizeof(uint32_t);
 	res.reserve(count);
-	for(int i = 0 ; i < count ; i += 1)
+	for(uint32_t i = 0 ; i < count ; i += 1)
 	{
 		std::string name;
 		pos = read_string(rep, name, pos);
@@ -177,7 +171,7 @@ public:
 		//
 	}
 
-	client_node		*generate			(std::string name)
+	client_node		*generate			(std::string/* name*/)
 	{
 		auto n = new client_node();
 		n->set_client(cl);
@@ -225,12 +219,6 @@ void client::update_prop(nid_t nid)
 	req.set_cmd(CMD_PROP_GET_VALUE);
 
 	dev->send(req, rep);
-
-	/*props_t::iterator it = props.find(prid);
-	if(it == props.end())
-	{
-		return;
-	}*/
 
 	tracked_t::iterator it = tracked.find(nid);
 	if(it == tracked.end())
@@ -378,20 +366,10 @@ bool client::get_prop_nid(const property_base *p, nid_t &nid) const
 	nid = pr->get_nid();
 
 	return true;
-
-	/*for(props_t::const_iterator it = props.begin() ; it != props.end() ; ++it)
-	{
-		if(it->second == p)
-		{
-			prid = it->first;
-			return true;
-		}
-	}
-
-	return false;*/
 }
 
-void client::request_add_property(client_node *nd, property_base *prop)
+/*void client::request_add_property(client_node *nd, property_base *prop)
 {
 //#error
 }
+*/

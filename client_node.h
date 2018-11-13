@@ -3,7 +3,6 @@
 #include "tree/tree_node_inherited.h"
 #include "device.h"
 #include "package.h"
-//#include "client.h"
 
 class client;
 
@@ -15,11 +14,7 @@ class client_node : public tree_node
 
 	client					*cl;
 
-	tree_node				*create					(std::string path);
-
-	using tree_node::generate;
-
-//	tree_node				*generate				();
+	//tree_node				*create					(std::string path);
 
 	tree_node				*get					(std::string path, bool create);
 

@@ -110,7 +110,8 @@ tree_node *client_node::at(std::string path)
 		return NULL;
 	}
 
-	n = create(path);
+	//n = create(path);
+	n = get(path, true);
 
 	if(n != NULL)
 	{
@@ -124,18 +125,16 @@ tree_node *client_node::at(std::string path)
 			pos = read_string(rep, type, pos);
 			std::string name;
 			pos = read_string(rep, name, pos);
-
-//			n->add_property(new property_value<double>(name));
 		}
 	}
 
 	return n;
 }
 
-tree_node *client_node::create(std::string path)
+/*tree_node *client_node::create(std::string path)
 {
 	return tree_node::generate(path);
-}
+}*/
 
 
 
