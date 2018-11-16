@@ -3,56 +3,23 @@
 #include <map>
 #include <set>
 
-#include "tree/tree_node.h"
-#include "device.h"
+#include "node_sync.h"
 
-#include "package.h"
-
-#include "property_serializer.h"
-
-class tree_node;
-
-class server : public device::listener, public tree_node::listener_t, public property_listener
+namespace treeipc
 {
-	typedef std::map<nid_t, tree_node *>		tracked_t;
-	tracked_t									tracked;
 
-	serializer_machine		serializer;
-
-	tree_node				*get_node			(nid_t nid);
-	property_base			*get_prop			(nid_t prid);
-
-	nid_t					get_nid				(tree_node *n);
-	bool					get_nid				(tree_node *n, nid_t &nid, bool do_track = true);
-
-	bool					get_nid				(property_base *n, nid_t &nid);
-
-	void					cmd_at				(const device::package_t &p);
-	void					cmd_ls				(const device::package_t &p);
-	void					cmd_get_prop		(const device::package_t &p);
-	void					cmd_subscribe		(const device::package_t &p, bool erase = false);
-	void					cmd_prop_value		(const device::package_t &p);
-
-	void					process_notification(const device::package_t &p);
-	void					child_added			(tree_node *n);
-	void					child_removed		(tree_node *, std::string name);
-
-	device					*dev;
-	tree_node				*target;
+class server : public node_sync
+{
 	nid_t					current_nid;
 
 	nid_t					generate_nid		();
-	nid_t					do_track			(tree_node *n);
-	void					untrack				(tree_node */*n*/);
-
-	void					new_property		(resource *r, property_base *);
-	void					updated				(property_base *prop);
 
 public:
 	/*constructor*/			server				();
 	/*constructor*/			server				(device *d);
 	/*destructor*/			~server				();
-
-	void					set_target			(tree_node *t);
-	void					set_device			(device *d);
+	
+	void					set_root			(tree_node *root);
 };
+
+}

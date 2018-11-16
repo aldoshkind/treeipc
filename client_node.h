@@ -4,7 +4,10 @@
 #include "device.h"
 #include "package.h"
 
-class client;
+namespace treeipc
+{
+
+class node_sync;
 
 class client_node : public tree_node
 {
@@ -12,7 +15,7 @@ class client_node : public tree_node
 
 	nid_t					get_rep;
 
-	client					*cl;
+	node_sync					*cl;
 
 	//tree_node				*create					(std::string path);
 
@@ -22,12 +25,15 @@ public:
 	/*constructor*/			client_node				(nid_t n = 0);
 	/*destructor*/			~client_node			();
 
-	virtual void			set_client				(client *c);
+	virtual void			set_client				(node_sync *c);
 	virtual void			set_nid					(nid_t nid);
 
 	tree_node::ls_list_t	ls						() const;
 
 	tree_node				*at						(std::string path);
+
+	tree_node				*attach					(std::string name, tree_node *obj, bool append);
+	int						remove					(std::string path, bool recursive);
 };
 
-
+}

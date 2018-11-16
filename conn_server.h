@@ -15,12 +15,12 @@ class conn_server : public acceptor::listener
 	{
 		socket_client sc;
 		socket_device sd;
-		server srv;
+		treeipc::server srv;
 
 	public:
 		client(socket_sp socket, tree_node *n) : sc(socket), sd(&sc), srv(&sd)
 		{
-			srv.set_target(n);
+			srv.set_root(n);
 			sd.set_listener(&srv);
 		}
 	};

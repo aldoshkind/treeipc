@@ -1,6 +1,7 @@
 #pragma once
 
 #include <set>
+#include <thread>
 
 #include <boost/asio.hpp>
 
@@ -35,7 +36,12 @@ public:
 
 	void accept()
 	{
-		socket_sp socket(new socket_sp::element_type(treeipc_over_boost::get_io_service()));
+		//socket_sp socket(new socket_sp::element_type(treeipc_over_boost::get_io_service()));		
+		
+#warning Это костыль, тут утекает память и потоки
+		auto iow = new treeipc_over_boost::ios_wrapper;
+		
+		socket_sp socket(new socket_sp::element_type(iow->get_io_service()));
 
 		auto f = boost::bind(&acceptor::connect_handler, this, boost::asio::placeholders::error, socket, status);
 

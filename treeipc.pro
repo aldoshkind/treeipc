@@ -14,7 +14,10 @@ SOURCES += main.cpp \
     ../tree/property_listener.cpp \
     ../tree/resource.cpp \
     ../tree/tree_node.cpp \
-    ../tree/tree_node_inherited.cpp
+    ../tree/tree_node_inherited.cpp \
+    property_fake.cpp \
+    proxy_node_generator.cpp \
+    node_sync.cpp
 
 HEADERS += \
     device.h \
@@ -31,8 +34,10 @@ HEADERS += \
     ../tree/filepath_utils.h \
     ../tree/property_listener.h \
     ../tree/resource.h \
-    ../tree/tree_node.h
+    ../tree/tree_node.h \
+    property_fake.h \
+    proxy_node_factory_base.h
 
-INCLUDEPATH += ../
+INCLUDEPATH += ../ ../tree
 
 LIBS += -pthread -lboost_system

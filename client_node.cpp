@@ -2,6 +2,8 @@
 
 #include "client.h"
 
+using namespace treeipc;
+
 /*constructor*/ client_node::client_node(nid_t n)
 {
 	//dev = NULL;
@@ -13,12 +15,7 @@
 	//
 }
 
-/*void					set_device			(device *d)
-{
-	dev = d;
-}*/
-
-void client_node::set_client(client *c)
+void client_node::set_client(node_sync *c)
 {
 	cl = c;
 }
@@ -27,12 +24,6 @@ void client_node::set_nid(nid_t nid)
 {
 	this->nid = nid;
 }
-
-/*property_base *client_node::add_property(property_base *p)
-{
-	cl->request_add_property(this, p);
-	return NULL;
-}*/
 
 tree_node *client_node::get(std::string path, bool create)
 {
@@ -131,17 +122,26 @@ tree_node *client_node::at(std::string path)
 	return n;
 }
 
-/*tree_node *client_node::create(std::string path)
+tree_node *client_node::attach(std::string name, tree_node *obj, bool append)
 {
-	return tree_node::generate(path);
-}*/
+	if(cl != nullptr)
+	{
+		auto res = tree_node::attach(name, obj, append);
+		bool ok = cl->attach(nid, name, obj);
+		if(!ok)
+		{
+			tree_node::remove(name);
+			printf("failed to attach client node %p\n", res);
+			return res;
+		}
+	}
 
+	return nullptr;
+}
 
-
-/*template <class T>
-tree_node *client_node_value<T>::generate()
+int client_node::remove(std::string path, bool recursive)
 {
-	client_node *c = new client_node;
-	c->set_parent(this);
-	return c;
-}*/
+	int res = tree_node::remove(path, recursive);
+	printf("client node remove %p\n", res);
+	return res;
+}
