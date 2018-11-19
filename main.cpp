@@ -6,7 +6,6 @@
 
 #include <unistd.h>
 
-#include "pseudodevice.h"
 #include "client.h"
 #include "server.h"
 

@@ -18,10 +18,11 @@ class conn_server : public acceptor::listener
 		treeipc::server srv;
 
 	public:
-		client(socket_sp socket, tree_node *n) : sc(socket), sd(&sc), srv(&sd)
+		client(socket_sp socket, tree_node *n) : sd(&sc), srv(&sd)
 		{
 			srv.set_root(n);
 			sd.set_listener(&srv);
+			sc.set_socket(socket);
 		}
 	};
 

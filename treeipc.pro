@@ -21,7 +21,6 @@ SOURCES += main.cpp \
 
 HEADERS += \
     device.h \
-    pseudodevice.h \
     server.h \
     client.h \
     package.h \
