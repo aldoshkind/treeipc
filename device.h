@@ -31,6 +31,7 @@ enum CMD
 	CMD_NODE_ATTACH = 15,
 	CMD_NODE_DETACH = 16,
 	CMD_GENERATE_NID = 17,
+	CMD_CHILD_ADDED = 18,
 };
 
 class package : private std::vector<uint8_t>
@@ -170,7 +171,7 @@ public:
 	using base_t::end;
 };
 
-class device : public one_to_one_observable<void, const package&>
+class device : public one_to_one_observable<void, const package *>
 {
 public:
 	/*constructor*/			device				()

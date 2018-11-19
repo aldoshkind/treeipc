@@ -9,11 +9,16 @@ using namespace treeipc;
 {
 	dev = NULL;
 	root_node = NULL;
+	package_processing_thread_run = true;
+	package_processing_thread = std::thread(std::bind(&node_sync::package_processing_routine, this));
 }
 
 /*destructor*/ node_sync::~node_sync()
 {
-	//
+	package_processing_thread_run = false;
+	// вталкиваем пустой пакет чтобы пробудить поток
+	package_queue.push(nullptr);
+	package_processing_thread.join();
 }
 
 void node_sync::set_device(device *d)
@@ -63,13 +68,8 @@ client_node *node_sync::fetch_node(nid_t nid, std::string name)
 	return dynamic_cast<client_node *>(tracked[rep.get_nid()]);
 }
 
-void node_sync::process_notification(const device::package_t &p)
+void node_sync::process_package(const package &p)
 {
-	if(p.size() < 1)
-	{
-		return;
-	}
-
 	switch(p.get_cmd())
 	{
 	case CMD_AT_SUCCESS:
@@ -114,6 +114,32 @@ void node_sync::process_notification(const device::package_t &p)
 	default:
 	break;
 	}
+	return;
+}
+
+void node_sync::package_processing_routine()
+{
+	for( ; package_processing_thread_run ; )
+	{
+		const package *p;
+		package_queue.pop(p);
+		if(package_processing_thread_run == false || p == nullptr)
+		{
+			break;
+		}
+		process_package(*p);
+	}
+}
+
+void node_sync::process_notification(const device::package_t *p)
+{
+	if(p == nullptr || p->size() < 1)
+	{
+		return;
+	}
+	
+	package_queue.push(p);
+	return;
 }
 
 client_node::ls_list_t node_sync::ls(nid_t nid)
@@ -265,13 +291,14 @@ bool node_sync::attach(nid_t nid, const std::string &name, tree_node *child)
 	append_string(req, name);
 
 	dev->send(req, rep);
-	
-	tracked[rep.get_nid()] = child;
 
 	if(rep.get_cmd() != CMD_SUCCESS)
 	{
 		return false;
 	}
+	
+	tracked[rep.get_nid()] = child;
+	
 	return true;
 }
 
@@ -495,7 +522,7 @@ void node_sync::child_added(tree_node *n)
 	if(dev != NULL)
 	{
 		device::package_t pack;
-		pack.set_cmd('a');
+		pack.set_cmd(CMD_CHILD_ADDED);
 
 		int pos = 0;
 

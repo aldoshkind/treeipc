@@ -110,7 +110,7 @@ class socket_device : public device, public one_to_one_observable<void, const st
 	typedef std::map<const package *, msgid_t>		request_msgids_t;
 	request_msgids_t							request_msgids;
 
-	msgid_t get_msgid()
+	msgid_t generate_msgid()
 	{
 		return msgid++;
 	}
@@ -123,7 +123,7 @@ class socket_device : public device, public one_to_one_observable<void, const st
 public:
 	socket_device(reliable_serial *rs) : pc(new package_codec)
 	{
-		get_msgid();
+		generate_msgid();
 		pc->set_listener(this);
 		pc->set_transport(rs);
 	}
@@ -138,14 +138,14 @@ public:
 		msgid_t msgid = 0;
 		memcpy(&msgid, &(p[0]), sizeof(msgid));
 
-		package res;
 		if(p.size() < sizeof(msgid))
 		{
 			throw("fuck you fucking fuck");
 		}
-		res.resize(p.size() - sizeof(msgid));
-		memcpy(&(res[0]), &(p[0]) + sizeof(msgid), res.size());
-		res.reset_header();
+		package *res = new package_t;
+		res->resize(p.size() - sizeof(msgid));
+		memcpy(&((*res)[0]), &(p[0]) + sizeof(msgid), res->size());
+		res->reset_header();
 
 		// highest bit shows if package is a reply
 		bool is_reply = msgid & reply_flag;
@@ -158,7 +158,7 @@ public:
 			{
 				std::lock_guard<std::mutex> lg(senders_mutex);
 				// unlock one who waits
-				in = res;
+				in = *res;
 				sender_response_received[msgid] = true;
 				sender_condvars[msgid].notify_one();
 				release_msgid(msgid);
@@ -166,7 +166,7 @@ public:
 			else
 			{
 				// enque
-				request_msgids[&res] = msgid;
+				request_msgids[res] = msgid;
 				notify(res);
 			}
 		}
@@ -195,19 +195,19 @@ public:
 	bool				send				(package_t req, package_t &resp)
 	{
 		std::unique_lock<decltype(senders_mutex)> lock(senders_mutex);
-		msgid_t mid = get_msgid();
-		bool ok = write(req, mid);
+		msgid_t msgid = generate_msgid();
+		bool ok = write(req, msgid);
 
 		if(ok == false)
 		{
-			release_msgid(mid);
+			release_msgid(msgid);
 			return false;
 		}
 
-		sender_response_received[mid] = false;
-		while(sender_response_received[mid] == false)
+		sender_response_received[msgid] = false;
+		while(sender_response_received[msgid] == false)
 		{
-			sender_condvars[mid].wait(lock);
+			sender_condvars[msgid].wait(lock);
 		}
 
 		resp = in;

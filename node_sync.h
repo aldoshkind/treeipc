@@ -1,12 +1,14 @@
 #pragma once
 
 #include <mutex>
+#include <thread>
 
 #include "device.h"
 #include "package.h"
 #include "client_node_value.h"
 #include "property_serializer.h"
 #include "proxy_node_generator.h"
+#include "locking_queue.h"
 
 namespace treeipc
 {
@@ -20,6 +22,13 @@ protected:
 	typedef std::map<nid_t, tree_node *>		tracked_t;
 	tracked_t									tracked;	
 	std::mutex									tracked_mutex;
+	
+	locking_queue<const package *> package_queue;
+	std::thread				package_processing_thread;
+	bool					package_processing_thread_run = false;
+	
+	void					package_processing_routine		();
+	void					process_package					(const package &p);
 	
 	proxy_node_generator	generator;
 	serializer_machine		serializer;
@@ -47,7 +56,7 @@ protected:
 
 	void					child_added				(tree_node *n);
 	void					child_removed			(tree_node *, std::string name);
-	void					process_notification	(const device::package_t &p);
+	void					process_notification	(const device::package_t *p);
 	void					updated					(property_base *prop);
 	
 	// вынести в класс nid_generator;
