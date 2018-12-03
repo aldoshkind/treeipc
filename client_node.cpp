@@ -89,36 +89,6 @@ tree_node *client_node::at(std::string path)
 		return n;
 	}
 
-#warning до сюда управление не доходит, нужно разобраться
-
-	device::package_t req, rep;
-	req.set_cmd(CMD_AT);
-	req.set_nid(nid);
-	append_string(req, path);
-
-	if(rep.get_cmd() == CMD_AT_ERROR)
-	{
-		return NULL;
-	}
-
-	//n = create(path);
-	n = get(path, true);
-
-	if(n != NULL)
-	{
-		int pos = 0;
-		int prop_count = rep.read<uint16_t>(pos);
-		pos += sizeof(uint16_t);
-
-		for(int i = 0 ; i < prop_count ; i += 1)
-		{
-			std::string type;
-			pos = read_string(rep, type, pos);
-			std::string name;
-			pos = read_string(rep, name, pos);
-		}
-	}
-
 	return n;
 }
 

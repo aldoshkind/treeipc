@@ -28,6 +28,7 @@ int proxy_node_generator::init_factories()
 	property_factories[""] = new untyped_node_factory(cl);
 	property_factories[typeid(double).name()] = new proxy_node_factory<double>(cl);
 	property_factories[typeid(int).name()] = new proxy_node_factory<int>(cl);
+	property_factories[typeid(bool).name()] = new proxy_node_factory<bool>(cl);
 	property_factories[typeid(QString).name()] = new proxy_node_factory<QString>(cl);
 
 	return 0;

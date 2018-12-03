@@ -178,6 +178,8 @@ public:
 
 	bool				write				(const package_t &p, msgid_t msgid)
 	{
+		//printf("write %d\n", p.get_nid());
+		
 		//package buf;
 		std::vector<uint8_t> buf;
 
@@ -194,9 +196,13 @@ public:
 
 	bool				send				(package_t req, package_t &resp)
 	{
+		//printf("send req %d\n", req.get_nid());
+		
+		
 		std::unique_lock<decltype(senders_mutex)> lock(senders_mutex);
 		msgid_t msgid = generate_msgid();
 		bool ok = write(req, msgid);
+		//printf("write result %d\n", (int)ok);
 
 		if(ok == false)
 		{
@@ -211,6 +217,7 @@ public:
 		}
 
 		resp = in;
+		//printf("got reply %d on req %d\n", resp.get_nid(), req.get_nid());
 
 		return true;
 	}
@@ -219,8 +226,11 @@ public:
 	{
 		if(request_msgids.find(req) == request_msgids.end())
 		{
+			//printf("unable to reply\n");
 			return false;
 		}
+		
+		//printf("reply req %d with %d\n", req->get_nid(), reply.get_nid());
 
 		msgid_t req_msgid = request_msgids[req];
 		req_msgid |= reply_flag;

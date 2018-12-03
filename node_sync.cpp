@@ -174,45 +174,33 @@ client_node::ls_list_t node_sync::ls(nid_t nid)
 
 void node_sync::update_prop(nid_t nid)
 {
+	tracked_t::iterator it = tracked.find(nid);
+	if(it == tracked.end())
+	{
+		return;
+	}
+	property_fake *pvf = dynamic_cast<property_fake *>(it->second);
+	property_base *prop = dynamic_cast<property_base *>(it->second);
+	if(pvf == nullptr || pvf->is_deserialization_in_process() || prop == nullptr)
+	{
+		return;
+	}
+	
 	device::package_t req, rep;
 
 	req.set_nid(nid);
 	req.set_cmd(CMD_PROP_GET_VALUE);
 
 	dev->send(req, rep);
-	
-#warning Error
-
-	tracked_t::iterator it = tracked.find(nid);
-	if(it == tracked.end())
-	{
-		return;
-	}
-
-	auto prop = dynamic_cast<property_base *>(it->second);
-
-	if(prop == nullptr)
-	{
-		return;
-	}
 
 	uint32_t sz = rep.read<uint32_t>(0);
 	serializer_base::buffer_t buf;
 	buf.resize(sz);
 	rep.read(sizeof(sz), &(buf[0]), sz);
 
-	property_fake *pvf = dynamic_cast<property_fake *>(it->second);
-	if(pvf != NULL)
-	{
-		pvf->set_deserialization(true);
-	}
-
+	pvf->set_deserialization(true);
 	serializer.deserialize(buf, prop);
-
-	if(pvf != NULL)
-	{
-		pvf->set_deserialization(false);
-	}
+	pvf->set_deserialization(false);
 
 	return;
 }
@@ -302,11 +290,17 @@ bool node_sync::attach(nid_t nid, const std::string &name, tree_node *child)
 	return true;
 }
 
-void node_sync::process_prop_value(const device::package_t &)
+void node_sync::process_prop_value(const device::package_t &p)
 {
-	/*const prid_t &prid = p.get_prid();
-	props_t::iterator it = props.find(prid);
-	if(it == props.end())
+	tracked_t::iterator it = tracked.find(p.get_nid());
+	if(it == tracked.end())
+	{
+		return;
+	}
+
+	property_fake *pvf = dynamic_cast<property_fake *>(it->second);
+	property_base *prop = dynamic_cast<property_base *>(it->second);
+	if(pvf == nullptr || pvf->is_deserialization_in_process() || prop == nullptr)
 	{
 		return;
 	}
@@ -316,19 +310,9 @@ void node_sync::process_prop_value(const device::package_t &)
 	buf.resize(sz);
 	p.read(sizeof(sz), &(buf[0]), sz);
 
-	property_fake *pvf = dynamic_cast<property_fake *>(it->second);
-	if(pvf != NULL)
-	{
-		pvf->set_deserialization(true);
-	}
-
-	serializer.deserialize(buf, it->second);
-
-	if(pvf != NULL)
-	{
-		pvf->set_deserialization(false);
-	}
-	it->second->notify_change();*/
+	pvf->set_deserialization(true);
+	serializer.deserialize(buf, prop);
+	pvf->set_deserialization(false);
 }
 
 
