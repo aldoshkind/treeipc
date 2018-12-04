@@ -21,7 +21,7 @@ protected:
 	
 	typedef std::map<nid_t, tree_node *>		tracked_t;
 	tracked_t									tracked;	
-	std::mutex									tracked_mutex;
+	std::recursive_mutex						tracked_mutex;
 	
 	locking_queue<const package *> package_queue;
 	std::thread				package_processing_thread;

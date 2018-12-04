@@ -32,6 +32,7 @@ class package_codec : public one_to_one_observable<void, const std::vector<uint8
 
 	void process_notification(const void *data, size_t size)
 	{
+		//printf("%d bytes read\n", size);
 		buffer.insert(buffer.end(), (char *)data, (char *)data + size);
 
 		for( ; ; )
@@ -73,8 +74,12 @@ public:
 		transport = rs;
 	}
 
+	std::recursive_mutex write_lock;
+	
 	bool write(const std::vector<uint8_t> &p)
 	{
+		std::lock_guard<std::recursive_mutex> lock(write_lock);
+		//printf("%d bytes write\n", p.size() + 4);
 		if(transport == nullptr)
 		{
 			return false;
@@ -94,11 +99,9 @@ class socket_device : public device, public one_to_one_observable<void, const st
 	package_codec *pc;
 
 	package in;
-
-	typedef int16_t	msgid_t;
+	typedef uint16_t msgid_t;
 	msgid_t msgid = 0;
-	//const msgid_t reply_flag = std::numeric_limits<msgid_t>::min();
-	const msgid_t reply_flag = 1 << (std::numeric_limits<msgid_t>::digits - 1);
+	const msgid_t reply_flag = 1 << (sizeof(msgid_t) * CHAR_BIT - 1);
 
 	std::mutex					senders_mutex;
 	typedef std::map<msgid_t, std::condition_variable>	sender_condvars_t;
@@ -108,16 +111,29 @@ class socket_device : public device, public one_to_one_observable<void, const st
 
 
 	typedef std::map<const package *, msgid_t>		request_msgids_t;
-	request_msgids_t							request_msgids;
+	request_msgids_t								request_msgids;
+	std::recursive_mutex							request_msgids_mutex;
+	
+	typedef std::vector<msgid_t> msgid_released_t;
+	msgid_released_t msgid_released;
+	std::recursive_mutex msgid_released_mutex;
 
 	msgid_t generate_msgid()
 	{
+		std::lock_guard<decltype(msgid_released_mutex)> lock(msgid_released_mutex);
+		if(msgid_released.size() > 0)
+		{
+			msgid_t res = msgid_released.back();
+			msgid_released.pop_back();
+			return res;
+		}
 		return msgid++;
 	}
 
-	void release_msgid(msgid_t)
+	void release_msgid(msgid_t msgid)
 	{
-		//
+		std::lock_guard<decltype(msgid_released_mutex)> lock(msgid_released_mutex);
+		msgid_released.push_back(msgid);
 	}
 
 public:
@@ -149,7 +165,7 @@ public:
 
 		// highest bit shows if package is a reply
 		bool is_reply = msgid & reply_flag;
-		// reset highes bit - is it useful?
+		// reset highest bit - is it useful?
 		msgid &= ~reply_flag;
 
 		if(msgid != 0)
@@ -159,6 +175,7 @@ public:
 				std::lock_guard<std::mutex> lg(senders_mutex);
 				// unlock one who waits
 				in = *res;
+				//printf("got reply for %d\n", msgid);
 				sender_response_received[msgid] = true;
 				sender_condvars[msgid].notify_one();
 				release_msgid(msgid);
@@ -166,6 +183,7 @@ public:
 			else
 			{
 				// enque
+				std::lock_guard<std::recursive_mutex> lock(request_msgids_mutex);
 				request_msgids[res] = msgid;
 				notify(res);
 			}
@@ -211,6 +229,7 @@ public:
 		}
 
 		sender_response_received[msgid] = false;
+		//printf("false for %d\n", msgid);
 		while(sender_response_received[msgid] == false)
 		{
 			sender_condvars[msgid].wait(lock);
@@ -224,6 +243,7 @@ public:
 
 	bool				reply				(const package_t *req, const package &reply)
 	{
+		std::lock_guard<std::recursive_mutex> request_msgids_lock(request_msgids_mutex);
 		if(request_msgids.find(req) == request_msgids.end())
 		{
 			//printf("unable to reply\n");

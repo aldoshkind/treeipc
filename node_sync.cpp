@@ -43,7 +43,7 @@ client_node *node_sync::fetch_node(nid_t nid, std::string name)
 	req.set_nid(nid);
 	append_string(req, name);
 
-	std::lock_guard<std::mutex> lg(tracked_mutex);
+	std::lock_guard<decltype(tracked_mutex)> lg(tracked_mutex);
 	dev->send(req, rep);
 
 	if(rep.get_cmd() == CMD_AT_ERROR)
@@ -77,6 +77,7 @@ void node_sync::process_package(const package &p)
 		client_node *n = new client_node(p.get_nid());
 		n->set_client(this);
 
+		std::lock_guard<decltype(tracked_mutex)> lg(tracked_mutex);
 		tracked[p.get_nid()] = n;
 	}
 	break;
@@ -174,6 +175,8 @@ client_node::ls_list_t node_sync::ls(nid_t nid)
 
 void node_sync::update_prop(nid_t nid)
 {
+	std::lock_guard<decltype(tracked_mutex)> lock(tracked_mutex);
+	
 	tracked_t::iterator it = tracked.find(nid);
 	if(it == tracked.end())
 	{
@@ -285,6 +288,7 @@ bool node_sync::attach(nid_t nid, const std::string &name, tree_node *child)
 		return false;
 	}
 	
+	std::lock_guard<decltype(tracked_mutex)> lg(tracked_mutex);	
 	tracked[rep.get_nid()] = child;
 	
 	return true;
@@ -292,6 +296,8 @@ bool node_sync::attach(nid_t nid, const std::string &name, tree_node *child)
 
 void node_sync::process_prop_value(const device::package_t &p)
 {
+	std::lock_guard<decltype(tracked_mutex)> lg(tracked_mutex);
+	
 	tracked_t::iterator it = tracked.find(p.get_nid());
 	if(it == tracked.end())
 	{
@@ -441,6 +447,8 @@ void node_sync::cmd_prop_value(const device::package_t &p)
 	nid_t nid = p.get_nid();
 
 	printf("value for %d\n", nid);
+	
+	std::lock_guard<decltype(tracked_mutex)> lg(tracked_mutex);
 
 	property_base *pb = dynamic_cast<property_base *>(tracked[nid]);
 
@@ -460,6 +468,8 @@ void node_sync::cmd_prop_value(const device::package_t &p)
 void node_sync::cmd_attach(const device::package_t &p)
 {
 	device::package_t resp;
+	
+	std::lock_guard<decltype(tracked_mutex)> lg(tracked_mutex);
 
 	auto it = tracked.find(p.get_nid());
 	if(it == tracked.end())
@@ -495,6 +505,8 @@ void node_sync::cmd_attach(const device::package_t &p)
 
 tree_node *node_sync::get_node(nid_t nid)
 {
+	std::lock_guard<decltype(tracked_mutex)> lg(tracked_mutex);
+	
 	tracked_t::iterator it = tracked.find(nid);
 	return (it == tracked.end()) ? NULL : it->second;
 }
@@ -527,6 +539,8 @@ void node_sync::child_removed(tree_node *, std::string name)
 
 property_base *node_sync::get_prop(nid_t nid)
 {
+	std::lock_guard<decltype(tracked_mutex)> lg(tracked_mutex);
+	
 	tracked_t::iterator it = tracked.find(nid);
 	if(it == tracked.end())
 	{
@@ -540,6 +554,8 @@ property_base *node_sync::get_prop(nid_t nid)
 
 bool node_sync::get_nid(tree_node *n, nid_t &nid, bool track)
 {
+	std::lock_guard<decltype(tracked_mutex)> lg(tracked_mutex);
+	
 	for(tracked_t::iterator it = tracked.begin() ; it != tracked.end() ; ++it)
 	{
 		if(it->second == n)
@@ -593,6 +609,8 @@ bool node_sync::get_nid(property_base *p, nid_t &nid)
 
 nid_t node_sync::do_track(tree_node *n)
 {
+	std::lock_guard<decltype(tracked_mutex)> lg(tracked_mutex);
+	
 	nid_t nid = generate_nid();
 	tracked[nid] = n;
 	return nid;

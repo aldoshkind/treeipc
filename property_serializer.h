@@ -162,10 +162,13 @@ public:
 class serializer_machine
 {
 	typedef std::map<std::string, serializer_base *>		serializers_t;
-	serializers_t									serializers;
+	serializers_t											serializers;
+	mutable std::recursive_mutex							serializers_mutex;
 
 	void						init						()
 	{
+		std::lock_guard<decltype(serializers_mutex)> lock(serializers_mutex);
+		
 		add_plain_serializer<double>();
 		add_plain_serializer<float>();
 		add_plain_serializer<int>();
@@ -197,6 +200,8 @@ public:
 
 	serializer_base::buffer_t		serialize					(property_base *c)
 	{
+		std::lock_guard<decltype(serializers_mutex)> lock(serializers_mutex);
+		
 		serializers_t::iterator it = serializers.find(c->get_type());
 		if(it == serializers.end())
 		{
@@ -207,6 +212,8 @@ public:
 
 	serializer_base::buffer_t		serialize					(const property_base *c, const void *v) const
 	{
+		const std::lock_guard<decltype(serializers_mutex)> lock(serializers_mutex);
+		
 		serializers_t::const_iterator it = serializers.find(c->get_type());
 		if(it == serializers.end())
 		{
@@ -218,6 +225,8 @@ public:
 	template <class type>
 	serializer_base::buffer_t		serialize					(type val)
 	{
+		std::lock_guard<decltype(serializers_mutex)> lock(serializers_mutex);
+		
 		serializers_t::iterator it = serializers.find(typeid(type).name());
 		if(it == serializers.end())
 		{
@@ -228,6 +237,8 @@ public:
 
 	bool						deserialize					(const serializer_base::buffer_t &buf, property_base *c)
 	{
+		std::lock_guard<decltype(serializers_mutex)> lock(serializers_mutex);
+		
 		serializers_t::iterator it = serializers.find(c->get_type());
 		if(it == serializers.end())
 		{
@@ -239,6 +250,8 @@ public:
 	template <class type>
 	bool						deserialize					(const serializer_base::buffer_t &buf, type &c)
 	{
+		std::lock_guard<decltype(serializers_mutex)> lock(serializers_mutex);
+		
 		serializers_t::iterator it = serializers.find(typeid(type).name());
 		if(it == serializers.end())
 		{
