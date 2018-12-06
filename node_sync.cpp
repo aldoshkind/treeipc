@@ -296,7 +296,7 @@ bool node_sync::attach(nid_t nid, const std::string &name, tree_node *child)
 
 void node_sync::process_prop_value(const device::package_t &p)
 {
-	std::lock_guard<decltype(tracked_mutex)> lg(tracked_mutex);
+	std::unique_lock<decltype(tracked_mutex)> lg(tracked_mutex);
 	
 	tracked_t::iterator it = tracked.find(p.get_nid());
 	if(it == tracked.end())
@@ -306,6 +306,8 @@ void node_sync::process_prop_value(const device::package_t &p)
 
 	property_fake *pvf = dynamic_cast<property_fake *>(it->second);
 	property_base *prop = dynamic_cast<property_base *>(it->second);
+	
+	lg.unlock();
 	if(pvf == nullptr || pvf->is_deserialization_in_process() || prop == nullptr)
 	{
 		return;

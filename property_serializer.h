@@ -237,26 +237,30 @@ public:
 
 	bool						deserialize					(const serializer_base::buffer_t &buf, property_base *c)
 	{
-		std::lock_guard<decltype(serializers_mutex)> lock(serializers_mutex);
+#warning
+		std::unique_lock<decltype(serializers_mutex)> lock(serializers_mutex);
 		
 		serializers_t::iterator it = serializers.find(c->get_type());
 		if(it == serializers.end())
 		{
 			return false;
 		}
+		lock.unlock();
 		return it->second->deserialize(buf, c);
 	}
 
 	template <class type>
 	bool						deserialize					(const serializer_base::buffer_t &buf, type &c)
 	{
-		std::lock_guard<decltype(serializers_mutex)> lock(serializers_mutex);
+#warning
+		std::unique_lock<decltype(serializers_mutex)> lock(serializers_mutex);
 		
 		serializers_t::iterator it = serializers.find(typeid(type).name());
 		if(it == serializers.end())
 		{
 			return false;
 		}
+		lock.unlock();
 		return it->second->deserialize(buf, &c);
 	}
 };
