@@ -115,3 +115,8 @@ int client_node::remove(std::string path, bool recursive)
 	printf("client node remove %p\n", res);
 	return res;
 }
+
+node_sync *client_node::get_client()
+{
+	return cl;
+}

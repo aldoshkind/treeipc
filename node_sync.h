@@ -40,6 +40,7 @@ protected:
 	bool					get_nid				(tree_node *n, nid_t &nid, bool do_track = true);
 	
 	nid_t					do_track			(tree_node *n);
+	nid_t					do_track			(tree_node *n, nid_t nid);
 	void					untrack				(tree_node */*n*/);
 
 	bool					get_nid				(property_base *n, nid_t &nid);
@@ -50,6 +51,8 @@ protected:
 	void					cmd_subscribe		(const device::package_t &p, bool erase = false);
 	void					cmd_prop_value		(const device::package_t &p);
 	void					cmd_attach			(const device::package_t &p);
+	void					cmd_subscribe_add_remove		(const device::package_t &p, bool erase);
+	void					cmd_child_added		(const device::package_t &p);
 	
 	bool					get_prop_nid		(const property_base *p, nid_t &nid) const;
 	void					process_prop_value	(const device::package_t &p);
@@ -77,6 +80,7 @@ public:
 	client_node				*fetch_node				(nid_t nid, std::string name);	
 	void					update_prop				(nid_t nid);
 	void					subscribe				(nid_t nid);
+	void					subscribe_add_remove	(nid_t nid);
 	void					unsubscribe				(nid_t nid);
 	bool					attach					(nid_t nid, const std::string &name, tree_node *child);
 	void					request_prop_set_value	(const property_base *p, const void *value);

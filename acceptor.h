@@ -18,7 +18,9 @@ class acceptor : public one_to_one_observable<void, socket_sp>
 	object_status::sp status;
 
 public:
-	acceptor() : acc(treeipc_over_boost::get_io_service(), boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 13233)), status(new object_status)
+	acceptor(boost::asio::ip::tcp::endpoint ep = boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 13233))
+				: acc(treeipc_over_boost::get_io_service(), ep)
+				, status(new object_status)
 	{
 		acc.set_option(boost::asio::socket_base::reuse_address(true));
 		acc.listen();

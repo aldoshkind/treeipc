@@ -39,6 +39,11 @@ public:
 	{
 		cl = c;
 	}
+	
+	/*node_sync				*get_client					()
+	{
+		return cl;
+	}*/
 
 	void					set_nid						(nid_t n)
 	{

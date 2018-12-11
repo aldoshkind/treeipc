@@ -27,6 +27,7 @@ public:
 
 	virtual void			set_client				(node_sync *c);
 	virtual void			set_nid					(nid_t nid);
+	node_sync				*get_client				();
 
 	tree_node::ls_list_t	ls						() const;
 

@@ -32,6 +32,7 @@ enum CMD
 	CMD_NODE_DETACH = 16,
 	CMD_GENERATE_NID = 17,
 	CMD_CHILD_ADDED = 18,
+	CMD_SUBSCRIBE_ADD_REMOVE = 19,
 };
 
 class package : private std::vector<uint8_t>

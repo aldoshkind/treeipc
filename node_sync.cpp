@@ -105,13 +105,16 @@ void node_sync::process_package(const package &p)
 	case CMD_NODE_ATTACH:
 		cmd_attach(p);
 	break;
-	case CMD_GENERATE_NID:
-	{
-		package rep;
-		rep.set_nid(generate_nid());
-		dev->reply(p, rep);
-	}
 	break;
+	case CMD_SUBSCRIBE_ADD_REMOVE:
+		cmd_subscribe_add_remove(p, false);
+	break;
+	case CMD_CHILD_ADDED:
+		cmd_child_added(p);
+	break;
+	/*case CMD_CHILD_REMOVED:
+		cmd_child_added(p);
+	break;*/
 	default:
 	break;
 	}
@@ -136,6 +139,14 @@ void node_sync::process_notification(const device::package_t *p)
 {
 	if(p == nullptr || p->size() < 1)
 	{
+		return;
+	}
+	
+	if(p->get_cmd() == CMD_GENERATE_NID)
+	{
+		package rep;
+		rep.set_nid(generate_nid());
+		dev->reply(p, rep);
 		return;
 	}
 	
@@ -175,13 +186,16 @@ client_node::ls_list_t node_sync::ls(nid_t nid)
 
 void node_sync::update_prop(nid_t nid)
 {
-	std::lock_guard<decltype(tracked_mutex)> lock(tracked_mutex);
+	std::unique_lock<decltype(tracked_mutex)> lock(tracked_mutex);
 	
 	tracked_t::iterator it = tracked.find(nid);
 	if(it == tracked.end())
 	{
 		return;
 	}
+	
+	//lock.unlock();
+	
 	property_fake *pvf = dynamic_cast<property_fake *>(it->second);
 	property_base *prop = dynamic_cast<property_base *>(it->second);
 	if(pvf == nullptr || pvf->is_deserialization_in_process() || prop == nullptr)
@@ -214,6 +228,16 @@ void node_sync::subscribe(nid_t nid)
 
 	req.set_nid(nid);
 	req.set_cmd(CMD_SUBSCRIBE);
+
+	dev->write(req);
+}
+
+void node_sync::subscribe_add_remove(nid_t nid)
+{
+	device::package_t req;
+
+	req.set_nid(nid);
+	req.set_cmd(CMD_SUBSCRIBE_ADD_REMOVE);
 
 	dev->write(req);
 }
@@ -279,7 +303,7 @@ bool node_sync::attach(nid_t nid, const std::string &name, tree_node *child)
 	}
 	
 	append_string(req, type);
-	append_string(req, name);
+	append_string(req, child->get_name());
 
 	dev->send(req, rep);
 
@@ -392,10 +416,10 @@ void node_sync::cmd_at(const device::package_t &p)
 	}
 	dev->reply(p, resp);
 
-	if(n != NULL)
+	/*if(n != NULL)
 	{
 		n->add_listener(this);
-	}
+	}*/
 }
 
 void node_sync::cmd_get_prop(const device::package_t &p)
@@ -480,14 +504,16 @@ void node_sync::cmd_attach(const device::package_t &p)
 	}
 	else
 	{
-		resp.set_cmd(CMD_SUCCESS);
-		nid_t nid = generate_nid();
-		resp.set_nid(nid);
-		
 		std::string type;
 		std::string name;
 		int pos = read_string(p, type);
 		read_string(p, name, pos);
+		
+		tree_node *parent = it->second;		
+
+		resp.set_cmd(CMD_SUCCESS);
+		nid_t nid = generate_nid();
+		resp.set_nid(nid);
 
 		client_node *generated = generator.generate(type, name);
 		if(generated == nullptr)
@@ -497,7 +523,6 @@ void node_sync::cmd_attach(const device::package_t &p)
 			return;
 		}
 		generated->set_nid(nid);
-		tree_node *parent = it->second;
 		tracked[nid] = generated;
 		parent->attach(name, generated);
 	}
@@ -519,16 +544,34 @@ void node_sync::child_added(tree_node *n)
 
 	if(dev != NULL)
 	{
+		nid_t parent_nid = 0;
+		if(get_nid(const_cast<tree_node *>(n->get_parent()), parent_nid) != true)
+		{
+			return;
+		}
+		
+		client_node *cn = dynamic_cast<client_node *>(n);
+		if(cn != nullptr && cn->get_client() == this)
+		{
+			return;
+		}
+		
+		nid_t nid = do_track(n);
+		
 		device::package_t pack;
 		pack.set_cmd(CMD_CHILD_ADDED);
+		pack.set_nid(parent_nid);
+		pack.append(nid);
 
-		int pos = 0;
-
-		std::string item;
-		item = n->get_name();
-		pos = pack.size();
-
-		append_string(pack, item);
+		std::string type;
+		property_base *pb = dynamic_cast<property_base *>(n);
+		if(pb != nullptr)
+		{
+			type = pb->get_type();
+		}
+		
+		append_string(pack, n->get_name());
+		append_string(pack, type);
 
 		dev->write(pack);
 	}
@@ -611,9 +654,13 @@ bool node_sync::get_nid(property_base *p, nid_t &nid)
 
 nid_t node_sync::do_track(tree_node *n)
 {
+	nid_t nid = generate_nid();	
+	return do_track(n, nid);
+}
+
+nid_t node_sync::do_track(tree_node *n, nid_t nid)
+{
 	std::lock_guard<decltype(tracked_mutex)> lg(tracked_mutex);
-	
-	nid_t nid = generate_nid();
 	tracked[nid] = n;
 	return nid;
 }
@@ -660,4 +707,51 @@ nid_t node_sync::generate_nid()
 #warning Добавить проверку
 		return rep.get_nid();
 	}
+}
+
+void node_sync::cmd_subscribe_add_remove(const device::package_t &p, bool erase)
+{
+	const nid_t &nid = p.get_nid();
+
+	tracked_t::iterator it = tracked.find(nid);
+	if(it == tracked.end())
+	{
+		return;
+	}
+	tree_node *nd = it->second;
+
+	if(erase == false)
+	{
+		//props_subscribed.insert(nid);
+		nd->add_listener(this);
+	}
+	else
+	{
+		//props_subscribed.erase(nid);
+		//nd->remove_listener(this);
+	}
+}
+
+void node_sync::cmd_child_added(const device::package_t &p)
+{
+	nid_t parent_nid = p.get_nid();
+	
+	tree_node *parent = get_node(parent_nid);
+	
+	if(parent == nullptr)
+	{
+		return;
+	}
+	
+	std::string name, type;
+	int pos = 0;
+	nid_t nid = p.read<nid_t>(pos);
+	pos += sizeof(nid);
+	pos = read_string(p, name, pos);
+	read_string(p, type, pos);
+	
+	client_node *nd = generator.generate(type, name);
+	nd->set_nid(nid);
+	
+	parent->attach(name, nd);
 }
