@@ -74,6 +74,7 @@ void node_sync::process_package(const package &p)
 	{
 	case CMD_AT_SUCCESS:
 	{
+#warning Что это такое? О_о
 		client_node *n = new client_node(p.get_nid());
 		n->set_client(this);
 

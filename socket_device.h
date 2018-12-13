@@ -175,10 +175,9 @@ public:
 				std::lock_guard<std::mutex> lg(senders_mutex);
 				// unlock one who waits
 				in = *res;
-				//printf("got reply for %d\n", msgid);
+				delete res;
 				sender_response_received[msgid] = true;
 				sender_condvars[msgid].notify_one();
-				release_msgid(msgid);
 			}
 			else
 			{
@@ -196,9 +195,6 @@ public:
 
 	bool				write				(const package_t &p, msgid_t msgid)
 	{
-		//printf("write %d\n", p.get_nid());
-		
-		//package buf;
 		std::vector<uint8_t> buf;
 
 		buf.insert(buf.end(), (uint8_t *)(&msgid), (uint8_t *)(&msgid) + 2);
@@ -214,13 +210,10 @@ public:
 
 	bool				send				(package_t req, package_t &resp)
 	{
-		//printf("send req %d\n", req.get_nid());
-		
-		
 		std::unique_lock<decltype(senders_mutex)> lock(senders_mutex);
 		msgid_t msgid = generate_msgid();
+		sender_response_received[msgid] = false;
 		bool ok = write(req, msgid);
-		//printf("write result %d\n", (int)ok);
 
 		if(ok == false)
 		{
@@ -228,15 +221,13 @@ public:
 			return false;
 		}
 
-		sender_response_received[msgid] = false;
-		//printf("false for %d\n", msgid);
 		while(sender_response_received[msgid] == false)
 		{
 			sender_condvars[msgid].wait(lock);
 		}
+		release_msgid(msgid);
 
 		resp = in;
-		//printf("got reply %d on req %d\n", resp.get_nid(), req.get_nid());
 
 		return true;
 	}
@@ -260,6 +251,7 @@ public:
 		bool ok = write(reply, req_msgid);
 
 		request_msgids.erase(req);
+		delete req;
 
 		if(ok == false)
 		{
