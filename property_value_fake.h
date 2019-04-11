@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tree/resource.h"
+#include "tree/property.h"
 #include "property_fake.h"
 
 namespace treeipc

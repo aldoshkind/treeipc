@@ -23,7 +23,7 @@ public:
 		//
 	}
 
-	client_node				*generate			(std::string name)
+	client_node				*generate			(std::string /*name*/)
 	{
 		auto node = new client_node_value<property_value_fake<T>>();
 		node->property_value_fake<T>::set_client(cl);

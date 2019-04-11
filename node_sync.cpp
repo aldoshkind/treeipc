@@ -290,7 +290,7 @@ bool node_sync::get_prop_nid(const property_base *p, nid_t &nid) const
 	return true;
 }
 
-bool node_sync::attach(nid_t nid, const std::string &name, tree_node *child)
+bool node_sync::attach(nid_t nid, const std::string &/*name*/, tree_node *child)
 {
 	device::package_t req, rep;
 	req.set_cmd(CMD_NODE_ATTACH);
@@ -473,7 +473,7 @@ void node_sync::cmd_prop_value(const device::package_t &p)
 {
 	nid_t nid = p.get_nid();
 
-	printf("value for %d\n", nid);
+	printf("value for %d\n", (int)nid);
 	
 	std::lock_guard<decltype(tracked_mutex)> lg(tracked_mutex);
 
@@ -481,7 +481,7 @@ void node_sync::cmd_prop_value(const device::package_t &p)
 
 	if(pb == nullptr)
 	{
-		printf("%s: node with prid %d not found\n", __PRETTY_FUNCTION__, nid);
+		printf("%s: node with nid %d not found\n", __PRETTY_FUNCTION__, (int)nid);
 		return;
 	}
 
@@ -578,7 +578,7 @@ void node_sync::child_added(tree_node *n)
 	}
 }
 
-void node_sync::child_removed(tree_node *, std::string name)
+void node_sync::child_removed(tree_node *, std::string /*name*/)
 {
 	//
 }

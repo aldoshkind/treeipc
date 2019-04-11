@@ -112,7 +112,7 @@ tree_node *client_node::attach(std::string name, tree_node *obj, bool append)
 int client_node::remove(std::string path, bool recursive)
 {
 	int res = tree_node::remove(path, recursive);
-	printf("client node remove %p\n", res);
+	printf("client node remove %d\n", res);
 	return res;
 }
 
