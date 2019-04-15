@@ -192,6 +192,12 @@ public:
 	{
 		serializers[typeid(type).name()] = new serializer_plain<type>;
 	}
+	
+	template <class type>
+	void						add_plain_serializer		(const std::string &type_name)
+	{
+		serializers[type_name] = new serializer_plain<type>;
+	}
 
 	void						add_serializer				(std::string type, serializer_base *s)
 	{
