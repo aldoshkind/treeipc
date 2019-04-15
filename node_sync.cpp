@@ -753,6 +753,7 @@ void node_sync::cmd_child_added(const device::package_t &p)
 	
 	client_node *nd = generator.generate(type, name);
 	nd->set_nid(nid);
+	do_track(nd, nid);
 	
 	parent->attach(name, nd);
 }
