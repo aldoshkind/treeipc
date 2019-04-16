@@ -27,8 +27,10 @@ public:
 
 	virtual buffer_t			serialize					(property_base *c) const = 0;
 	virtual buffer_t			serialize					(const void *c) const = 0;
+	virtual bool				serialize					(property_base *from, void *to) const = 0;
 	virtual bool				deserialize					(const buffer_t &buf, property_base *c) const = 0;
 	virtual bool				deserialize					(const buffer_t &buf, void *c) const = 0;
+	virtual int					get_size					() = 0;				// returns size in bytes or -1 if size varies
 };
 
 template <class type>
@@ -70,6 +72,20 @@ public:
 
 		return buf;
 	}
+	
+	bool						serialize					(property_base *from, void *to) const
+	{
+		property<type> *pd = dynamic_cast<property<type> *>(from);
+		if(pd == NULL)
+		{
+			return false;
+		}
+
+		type value = pd->get_value();
+		memcpy(to, &value, sizeof(type));
+		
+		return true;
+	}
 
 	bool						deserialize					(const buffer_t &buf, property_base *c) const
 	{
@@ -94,6 +110,11 @@ public:
 		memcpy(c, &buf[0], sizeof(type));
 		return true;
 	}
+	
+	int							get_size					()
+	{
+		return sizeof(type);
+	}
 };
 
 
@@ -114,7 +135,8 @@ public:
     {
         buffer_t buf;
         property<QString> *pd = dynamic_cast<property<QString> *>(c);
-        if(pd == NULL) {
+        if(pd == NULL)
+		{
             return buf;
         }
         QString value = pd->get_value();
@@ -122,6 +144,20 @@ public:
         buf.resize(value.toStdString().size());
         memcpy(&buf[0], value.toStdString().c_str(), value.toStdString().size());
         return buf;
+    }
+	
+	bool						serialize					(property_base *from, void *to) const
+    {
+        property<QString> *pd = dynamic_cast<property<QString> *>(from);
+        if(pd == NULL)
+		{
+            return false;
+        }
+        QString value = pd->get_value();
+
+        memcpy(to, value.toStdString().c_str(), value.toStdString().size());
+
+        return true;
     }
 
     buffer_t					serialize					(const void *c) const
@@ -155,6 +191,11 @@ public:
 		v = QString(std::string((char*)&buf[0], buf.size()).c_str());
         return false;
     }
+	
+	int							get_size					()
+	{
+		return -1;
+	}
 };
 
 
@@ -177,9 +218,12 @@ class serializer_machine
 	}
 
 public:
-	/*constructor*/				serializer_machine			()
+	/*constructor*/				serializer_machine			(bool do_init_default_serializers = true)
 	{
-		init();
+		if(do_init_default_serializers)
+		{
+			init();
+		}
 	}
 
 	/*destructor*/				~serializer_machine			()
@@ -227,6 +271,18 @@ public:
 		}
 		return it->second->serialize(v);
 	}
+	
+	bool							serialize_to_buffer			(property_base *from, void *to) const
+	{
+		const std::lock_guard<decltype(serializers_mutex)> lock(serializers_mutex);
+		
+		serializers_t::const_iterator it = serializers.find(from->get_type());
+		if(it == serializers.end())
+		{
+			return false;
+		}
+		return it->second->serialize(from, to);
+	}
 
 	template <class type>
 	serializer_base::buffer_t		serialize					(type val)
@@ -268,5 +324,17 @@ public:
 		}
 		lock.unlock();
 		return it->second->deserialize(buf, &c);
+	}
+	
+	int							get_size					(const std::string &type)
+	{
+		const std::lock_guard<decltype(serializers_mutex)> lock(serializers_mutex);
+		
+		serializers_t::const_iterator it = serializers.find(type);
+		if(it == serializers.end())
+		{
+			return -1;
+		}
+		return it->second->get_size();
 	}
 };
