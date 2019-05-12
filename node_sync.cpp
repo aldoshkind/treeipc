@@ -21,7 +21,7 @@ using namespace treeipc;
 	package_processing_thread.join();
 }
 
-void node_sync::set_device(device *d)
+void node_sync::set_device(package_stream_base *d)
 {
 	dev = d;
 }
@@ -38,7 +38,7 @@ void node_sync::set_root(tree_node *root)
 
 client_node *node_sync::fetch_node(nid_t nid, std::string name)
 {
-	device::package_t req, rep;
+	package_stream_base::package_t req, rep;
 	req.set_cmd(CMD_AT);
 	req.set_nid(nid);
 	append_string(req, name);
@@ -136,7 +136,7 @@ void node_sync::package_processing_routine()
 	}
 }
 
-void node_sync::process_notification(const device::package_t *p)
+void node_sync::process_notification(const package_stream_base::package_t *p)
 {
 	if(p == nullptr || p->size() < 1)
 	{
@@ -157,11 +157,11 @@ void node_sync::process_notification(const device::package_t *p)
 
 client_node::ls_list_t node_sync::ls(nid_t nid)
 {
-	device::package_t req;
+	package_stream_base::package_t req;
 	req.set_cmd(CMD_LS);
 	req.set_nid(nid);
 
-	device::package_t rep;
+	package_stream_base::package_t rep;
 	dev->send(req, rep);
 
 	if(rep.get_cmd() != CMD_LS_SUCCESS)
@@ -204,7 +204,7 @@ void node_sync::update_prop(nid_t nid)
 		return;
 	}
 	
-	device::package_t req, rep;
+	package_stream_base::package_t req, rep;
 
 	req.set_nid(nid);
 	req.set_cmd(CMD_PROP_GET_VALUE);
@@ -225,7 +225,7 @@ void node_sync::update_prop(nid_t nid)
 
 void node_sync::subscribe(nid_t nid)
 {
-	device::package_t req;
+	package_stream_base::package_t req;
 
 	req.set_nid(nid);
 	req.set_cmd(CMD_SUBSCRIBE);
@@ -235,7 +235,7 @@ void node_sync::subscribe(nid_t nid)
 
 void node_sync::subscribe_add_remove(nid_t nid)
 {
-	device::package_t req;
+	package_stream_base::package_t req;
 
 	req.set_nid(nid);
 	req.set_cmd(CMD_SUBSCRIBE_ADD_REMOVE);
@@ -245,7 +245,7 @@ void node_sync::subscribe_add_remove(nid_t nid)
 
 void node_sync::unsubscribe(nid_t nid)
 {
-	device::package_t req;
+	package_stream_base::package_t req;
 
 	req.set_nid(nid);
 	req.set_cmd(CMD_UNSUBSCRIBE);
@@ -262,7 +262,7 @@ void node_sync::request_prop_set_value(const property_base *p, const void *value
 		return;
 	}
 
-	device::package_t req;
+	package_stream_base::package_t req;
 
 	nid_t nid = 0;
 	if(get_prop_nid(p, nid) == false)
@@ -292,7 +292,7 @@ bool node_sync::get_prop_nid(const property_base *p, nid_t &nid) const
 
 bool node_sync::attach(nid_t nid, const std::string &/*name*/, tree_node *child)
 {
-	device::package_t req, rep;
+	package_stream_base::package_t req, rep;
 	req.set_cmd(CMD_NODE_ATTACH);
 	req.set_nid(nid);
 	
@@ -319,7 +319,7 @@ bool node_sync::attach(nid_t nid, const std::string &/*name*/, tree_node *child)
 	return true;
 }
 
-void node_sync::process_prop_value(const device::package_t &p)
+void node_sync::process_prop_value(const package_stream_base::package_t &p)
 {
 	std::unique_lock<decltype(tracked_mutex)> lg(tracked_mutex);
 	
@@ -349,11 +349,11 @@ void node_sync::process_prop_value(const device::package_t &p)
 }
 
 
-void node_sync::cmd_ls(const device::package_t &p)
+void node_sync::cmd_ls(const package_stream_base::package_t &p)
 {
 	nid_t nid = p.get_nid();
 	tree_node *t = get_node(nid);
-	device::package_t resp;
+	package_stream_base::package_t resp;
 	if(t == NULL)
 	{
 		resp.set_cmd(CMD_LS_ERROR);
@@ -375,12 +375,12 @@ void node_sync::cmd_ls(const device::package_t &p)
 	dev->reply(p, resp);
 }
 
-void node_sync::cmd_at(const device::package_t &p)
+void node_sync::cmd_at(const package_stream_base::package_t &p)
 {
 	nid_t nid = p.get_nid();
 	tree_node *t = get_node(nid);
 	tree_node *n = NULL;
-	device::package_t resp;
+	package_stream_base::package_t resp;
 	if(t == NULL)
 	{
 		resp.set_cmd(CMD_AT_ERROR);
@@ -423,12 +423,12 @@ void node_sync::cmd_at(const device::package_t &p)
 	}*/
 }
 
-void node_sync::cmd_get_prop(const device::package_t &p)
+void node_sync::cmd_get_prop(const package_stream_base::package_t &p)
 {
 	nid_t nid = p.get_nid();
 	property_base *prop = get_prop(nid);
 
-	device::package_t resp;
+	package_stream_base::package_t resp;
 	if(prop == NULL)
 	{
 		resp.set_cmd(CMD_PROP_GET_VALUE_ERROR);
@@ -447,7 +447,7 @@ void node_sync::cmd_get_prop(const device::package_t &p)
 	dev->reply(p, resp);
 }
 
-void node_sync::cmd_subscribe(const device::package_t &p, bool erase)
+void node_sync::cmd_subscribe(const package_stream_base::package_t &p, bool erase)
 {
 	const nid_t &nid = p.get_nid();
 
@@ -469,7 +469,7 @@ void node_sync::cmd_subscribe(const device::package_t &p, bool erase)
 	}
 }
 
-void node_sync::cmd_prop_value(const device::package_t &p)
+void node_sync::cmd_prop_value(const package_stream_base::package_t &p)
 {
 	nid_t nid = p.get_nid();
 
@@ -492,9 +492,9 @@ void node_sync::cmd_prop_value(const device::package_t &p)
 	serializer.deserialize(buf, pb);
 }
 
-void node_sync::cmd_attach(const device::package_t &p)
+void node_sync::cmd_attach(const package_stream_base::package_t &p)
 {
-	device::package_t resp;
+	package_stream_base::package_t resp;
 	
 	std::lock_guard<decltype(tracked_mutex)> lg(tracked_mutex);
 
@@ -559,7 +559,7 @@ void node_sync::child_added(tree_node *n)
 		
 		nid_t nid = do_track(n);
 		
-		device::package_t pack;
+		package_stream_base::package_t pack;
 		pack.set_cmd(CMD_CHILD_ADDED);
 		pack.set_nid(parent_nid);
 		pack.append(nid);
@@ -680,7 +680,7 @@ void node_sync::updated(property_base *prop)
 		return;
 	}*/
 
-	device::package_t resp;
+	package_stream_base::package_t resp;
 	serializer_base::buffer_t buf = serializer.serialize(prop);
 
 	resp.set_cmd(CMD_PROP_VALUE_UPDATED);
@@ -710,7 +710,7 @@ nid_t node_sync::generate_nid()
 	}
 }
 
-void node_sync::cmd_subscribe_add_remove(const device::package_t &p, bool erase)
+void node_sync::cmd_subscribe_add_remove(const package_stream_base::package_t &p, bool erase)
 {
 	const nid_t &nid = p.get_nid();
 
@@ -733,7 +733,7 @@ void node_sync::cmd_subscribe_add_remove(const device::package_t &p, bool erase)
 	}
 }
 
-void node_sync::cmd_child_added(const device::package_t &p)
+void node_sync::cmd_child_added(const package_stream_base::package_t &p)
 {
 	nid_t parent_nid = p.get_nid();
 	

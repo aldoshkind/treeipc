@@ -7,12 +7,13 @@ using namespace treeipc;
 	current_nid = 0;
 }
 
-/*constructor*/ server::server(device *d)
+/*constructor*/ server::server(package_stream_base *d)
 {
 	set_device(d);
 	current_nid = 0;
 
 	set_device(d);
+	d->set_listener(this);
 }
 
 /*destructor*/ server::~server()

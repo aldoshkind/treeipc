@@ -1,12 +1,12 @@
 #include "package.h"
 
-void append_string(device::package_t &pack, const std::string &s)
+void append_string(package_stream_base::package_t &pack, const std::string &s)
 {
 	pack.append<uint32_t>(s.size());
 	pack.append((void *)s.c_str(), s.size());
 }
 
-int read_string(const device::package_t &pack, std::string &s, int pos)
+int read_string(const package_stream_base::package_t &pack, std::string &s, int pos)
 {
 	std::string::size_type sz = pack.read<uint32_t>(pos);
 	s.resize(sz);

@@ -172,27 +172,29 @@ public:
 	using base_t::end;
 };
 
-class device : public one_to_one_observable<void, const package *>
+class package_stream_base : public one_to_one_observable<void, const package *>
 {
 public:
-	/*constructor*/			device				()
+	/*constructor*/			package_stream_base				()
 	{
 		//
 	}
 
-	virtual /*destructor*/	~device				()
+	virtual /*destructor*/	~package_stream_base				()
 	{
 		//
 	}
 
 	typedef	package									package_t;
 
-	virtual bool				write				(const package_t &p) = 0;					// just writes package to device
-	virtual bool				send				(package_t req, package_t &resp) = 0;		// blocks and waits for response
+	virtual bool				write				(const package_t &p) = 0;							// just writes package to device
+	virtual bool				send				(package_t req, package_t &resp) = 0;				// blocks and waits for response
 	virtual bool				reply				(const package_t *req, const package &rep) = 0;		// replies on req with reply
 	bool						reply				(const package_t &req, const package &rep)
 	{
 		return reply(&req, rep);
 	}
+
+	virtual void				start				() = 0;												// starts the process of packages acquision
 };
 

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <limits.h>
 
 #include <string>
 #include <thread>
@@ -11,19 +12,12 @@
 #include <mutex>
 #include <map>
 
-#include <boost/asio.hpp>
-#include <boost/bind.hpp>
+#include "package_stream_base.h"
+#include "reliable_bytestream_base.h"
 
-#include "device.h"
-#include "io_service.h"
-
-#include <boost/asio.hpp>
-
-#include "reliable_serial.h"
-
-class package_codec : public one_to_one_observable<void, const std::vector<uint8_t> &>, public reliable_serial::listener
+class package_codec : public one_to_one_observable<void, const std::vector<uint8_t> &>, public reliable_bytestream_base::listener
 {
-	reliable_serial *transport;
+	reliable_bytestream_base *transport;
 
 	//package buffer;
 	std::vector<uint8_t> buffer;
@@ -45,7 +39,6 @@ class package_codec : public one_to_one_observable<void, const std::vector<uint8
 
 			if(pack_size == 0 || buffer.size() < pack_size)
 			{
-				// ждём пока не наберётся достаточно данных
 				return;
 			}
 
@@ -68,10 +61,15 @@ public:
 		//
 	}
 
-	void set_transport(reliable_serial *rs)
+	void set_transport(reliable_bytestream_base *rs)
 	{
 		rs->set_listener(this);
 		transport = rs;
+	}
+
+	reliable_bytestream_base *get_transport()
+	{
+		return transport;
 	}
 
 	std::recursive_mutex write_lock;
@@ -94,7 +92,7 @@ public:
 	}
 };
 
-class socket_device : public device, public one_to_one_observable<void, const std::vector<uint8_t> &>::listener
+class package_stream : public package_stream_base, public one_to_one_observable<void, const std::vector<uint8_t> &>::listener
 {
 	package_codec *pc;
 
@@ -137,14 +135,14 @@ class socket_device : public device, public one_to_one_observable<void, const st
 	}
 
 public:
-	socket_device(reliable_serial *rs) : pc(new package_codec)
+	package_stream(reliable_bytestream_base *rs) : pc(new package_codec)
 	{
 		generate_msgid();
 		pc->set_listener(this);
 		pc->set_transport(rs);
 	}
 
-	~socket_device()
+	~package_stream()
 	{
 		delete pc;
 	}
@@ -259,5 +257,10 @@ public:
 		}
 
 		return true;
+	}
+
+	void start()
+	{
+		pc->get_transport()->start();
 	}
 };
