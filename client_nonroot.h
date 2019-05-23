@@ -14,7 +14,7 @@ public:
 	void					set_root				(tree_node *);
 	
 private:
-	void					child_added				(tree_node *n);
+	void					child_added				(tree_node *p, tree_node *n);
 };
 
 }

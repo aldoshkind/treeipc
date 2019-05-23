@@ -10,7 +10,7 @@ void client_nonroot::set_root(tree_node *root)
 	root->add_listener(this, false);
 }
 
-void client_nonroot::child_added(tree_node *n)
+void client_nonroot::child_added(tree_node *p, tree_node *n)
 {
 	return;
 	
@@ -26,5 +26,5 @@ void client_nonroot::child_added(tree_node *n)
 		printf("child rejected %s\n", n->get_name().c_str());
 		return;
 	}
-	node_sync::child_added(n);
+	node_sync::child_added(p, n);
 }

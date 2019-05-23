@@ -539,14 +539,14 @@ tree_node *node_sync::get_node(nid_t nid)
 	return (it == tracked.end()) ? NULL : it->second;
 }
 
-void node_sync::child_added(tree_node *n)
+void node_sync::child_added(tree_node *p, tree_node *n)
 {
-	printf("child added %s\n", n->get_name().c_str());
+	printf("child added %s\n", (p->get_path() + n->get_name()).c_str());
 
 	if(dev != NULL)
 	{
 		nid_t parent_nid = 0;
-		if(get_nid(const_cast<tree_node *>(n->get_parent()), parent_nid) != true)
+		if(get_nid(p, parent_nid) != true)
 		{
 			return;
 		}

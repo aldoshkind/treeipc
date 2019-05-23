@@ -57,7 +57,7 @@ protected:
 	bool					get_prop_nid		(const property_base *p, nid_t &nid) const;
 	void					process_prop_value	(const device::package_t &p);
 
-	void					child_added				(tree_node *n);
+	void					child_added				(tree_node *p, tree_node *n);
 	void					child_removed			(tree_node *, std::string name);
 	void					process_notification	(const device::package_t *p);
 	void					updated					(property_base *prop);
