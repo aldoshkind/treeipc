@@ -752,6 +752,10 @@ void node_sync::cmd_child_added(const device::package_t &p)
 	read_string(p, type, pos);
 	
 	client_node *nd = generator.generate(type, name);
+	if(nd == nullptr)
+	{
+		return;
+	}
 	nd->set_nid(nid);
 	do_track(nd, nid);
 	

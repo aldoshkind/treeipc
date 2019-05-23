@@ -21,6 +21,9 @@
 
 #include "reliable_serial.h"
 
+namespace treeipc
+{
+
 class package_codec : public one_to_one_observable<void, const std::vector<uint8_t> &>, public reliable_serial::listener
 {
 	reliable_serial *transport;
@@ -261,3 +264,5 @@ public:
 		return true;
 	}
 };
+
+}

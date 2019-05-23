@@ -5,6 +5,9 @@
 #include "tree/tree_node.h"
 #include "server.h"
 
+namespace treeipc
+{
+
 class conn_server : public acceptor::listener
 {
 	std::mutex mutex;
@@ -83,3 +86,5 @@ public:
 		printf("unlock %p in %s of %p\n", &mutex, __PRETTY_FUNCTION__, this);
 	}*/
 };
+
+}

@@ -1,5 +1,8 @@
 #include "package.h"
 
+namespace treeipc
+{
+
 void append_string(device::package_t &pack, const std::string &s)
 {
 	pack.append<uint32_t>(s.size());
@@ -14,4 +17,6 @@ int read_string(const device::package_t &pack, std::string &s, int pos)
 	pack.read(pos, (void *)(s.c_str()), s.size());
 	pos += s.size();
 	return pos;
+}
+
 }

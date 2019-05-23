@@ -7,6 +7,9 @@
 
 #include "observable.h"
 
+namespace treeipc
+{
+
 typedef uint64_t	unique_id_t;			// unique id
 typedef unique_id_t		nid_t;			// node id
 typedef uint8_t		cmd_t;
@@ -196,3 +199,4 @@ public:
 	}
 };
 
+}
