@@ -120,3 +120,11 @@ node_sync *client_node::get_client()
 {
 	return cl;
 }
+
+void client_node::subscribe_add_remove()
+{
+	if(cl != nullptr)
+	{
+		cl->subscribe_add_remove(nid);
+	}
+}

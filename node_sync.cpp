@@ -759,6 +759,7 @@ void node_sync::cmd_child_added(const device::package_t &p)
 		return;
 	}
 	nd->set_nid(nid);
+	nd->subscribe_add_remove();
 	do_track(nd, nid);
 	
 	parent->attach(name, nd);

@@ -32,6 +32,7 @@ public:
 	tree_node::ls_list_t	ls						() const;
 
 	tree_node				*at						(std::string path);
+	void					subscribe_add_remove	();
 
 	tree_node				*attach					(std::string name, tree_node *obj, bool append);
 	int						remove					(std::string path, bool recursive);
