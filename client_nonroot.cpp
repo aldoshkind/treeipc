@@ -5,6 +5,7 @@ using namespace treeipc;
 void client_nonroot::set_root(tree_node *root)
 {
 	nid_t root_nid = do_track(root, 0);
+	node_sync::set_root(root);
 	// запросить подписку на обновления
 	subscribe_add_remove(root_nid);
 	root->add_listener(this, false);
@@ -12,8 +13,6 @@ void client_nonroot::set_root(tree_node *root)
 
 void client_nonroot::child_added(tree_node *p, tree_node *n)
 {
-	return;
-	
 	client_node *cn = dynamic_cast<client_node *>(n);
 	if(cn != nullptr && cn->get_client() == this)
 	{
@@ -26,5 +25,6 @@ void client_nonroot::child_added(tree_node *p, tree_node *n)
 		printf("child rejected %s\n", n->get_name().c_str());
 		return;
 	}
+
 	node_sync::child_added(p, n);
 }
