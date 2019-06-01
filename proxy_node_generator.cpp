@@ -30,6 +30,7 @@ int proxy_node_generator::init_factories()
 	property_factories[typeid(int).name()] = new proxy_node_factory<int>(cl);
 	property_factories[typeid(bool).name()] = new proxy_node_factory<bool>(cl);
 	property_factories[typeid(QString).name()] = new proxy_node_factory<QString>(cl);
+	property_factories[typeid(QByteArray).name()] = new proxy_node_factory<QByteArray>(cl);
 
 	return 0;
 }

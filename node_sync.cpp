@@ -345,6 +345,7 @@ void node_sync::process_prop_value(const device::package_t &p)
 
 	pvf->set_deserialization(true);
 	serializer.deserialize(buf, prop);
+	prop->notify_change();
 	pvf->set_deserialization(false);
 }
 
@@ -490,6 +491,7 @@ void node_sync::cmd_prop_value(const device::package_t &p)
 	p.read(0, &(buf[0]), buf.size());
 
 	serializer.deserialize(buf, pb);
+	pb->notify_change();
 }
 
 void node_sync::cmd_attach(const device::package_t &p)

@@ -200,6 +200,102 @@ public:
 
 
 
+
+
+
+
+
+class serializer_qbytearray : public serializer_base
+{
+public:
+    /*constructor*/				serializer_qbytearray			()
+    {
+        //
+    }
+
+    /*destructor*/				~serializer_qbytearray			()
+    {
+        //
+    }
+
+    buffer_t					serialize					(property_base *c) const
+    {
+        buffer_t buf;
+        property<QByteArray> *pd = dynamic_cast<property<QByteArray> *>(c);
+        if(pd == NULL)
+		{
+            return buf;
+        }
+        QByteArray value = pd->get_value();
+
+        buf.resize(value.toStdString().size());
+        memcpy(&buf[0], value.toStdString().c_str(), value.toStdString().size());
+        return buf;
+    }
+	
+	bool						serialize					(property_base *from, void *to) const
+    {
+        property<QByteArray> *pd = dynamic_cast<property<QByteArray> *>(from);
+        if(pd == NULL)
+		{
+            return false;
+        }
+        QByteArray value = pd->get_value();
+
+        memcpy(to, value.data(), value.size());
+
+        return true;
+    }
+
+    buffer_t					serialize					(const void *c) const
+    {
+        buffer_t buf;
+		QByteArray &value = *((QByteArray *)c);
+		buf.resize(value.size());
+		memcpy(&buf[0], value.data(), value.size());
+
+        return buf;
+    }
+
+	bool						deserialize					(const buffer_t &buf, property_base *c) const
+	{
+		property<QByteArray> *pd = dynamic_cast<property<QByteArray> *>(c);
+		if(pd == nullptr)
+		{
+			return false;
+		}
+		QByteArray value((char *)&buf[0], buf.size());
+		pd->sync_value(value);
+		return true;
+	}
+
+	bool						deserialize					(const buffer_t &buf, void *c) const
+	{
+		if(c == nullptr)
+		{
+			return false;
+		}
+		QByteArray &v = *((QByteArray *)c);
+		v = QByteArray((char *)&buf[0], buf.size());
+        return false;
+    }
+	
+	int							get_size					()
+	{
+		return -1;
+	}
+};
+
+
+
+
+
+
+
+
+
+
+
 class serializer_machine
 {
 	typedef std::map<std::string, serializer_base *>		serializers_t;
@@ -215,6 +311,7 @@ class serializer_machine
 		add_plain_serializer<int>();
 		add_plain_serializer<bool>();
         add_serializer(typeid(QString).name(), new serializer_qstring);
+		add_serializer(typeid(QByteArray).name(), new serializer_qbytearray);
 	}
 
 public:
