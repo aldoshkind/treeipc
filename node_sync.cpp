@@ -106,7 +106,6 @@ void node_sync::process_package(const package &p)
 	case CMD_NODE_ATTACH:
 		cmd_attach(p);
 	break;
-	break;
 	case CMD_SUBSCRIBE_ADD_REMOVE:
 		cmd_subscribe_add_remove(p, false);
 	break;
@@ -580,7 +579,7 @@ void node_sync::child_added(tree_node *p, tree_node *n)
 	}
 }
 
-void node_sync::child_removed(tree_node *, std::string /*name*/)
+void node_sync::child_removed(tree_node * /*parent*/, std::string /*name*/, tree_node * /*node*/)
 {
 	//
 }
@@ -636,23 +635,6 @@ bool node_sync::get_nid(property_base *p, nid_t &nid)
 		return false;
 	}
 	return get_nid(n, nid, false);
-
-
-	/*for(props_t::iterator it = props.begin() ; it != props.end() ; ++it)
-	{
-		if(it->second == p)
-		{
-			prid = it->first;
-			return true;
-		}
-	}
-
-	prid = generate_prid();
-	props[prid] = p;
-
-	return true;*/
-
-	return false;
 }
 
 nid_t node_sync::do_track(tree_node *n)
@@ -677,10 +659,6 @@ void node_sync::updated(property_base *prop)
 {
 	nid_t nid;
 	get_nid(prop, nid);
-	/*if(props_subscribed.find(prid) == props_subscribed.end())
-	{
-		return;
-	}*/
 
 	device::package_t resp;
 	serializer_base::buffer_t buf = serializer.serialize(prop);

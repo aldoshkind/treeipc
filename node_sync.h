@@ -58,7 +58,7 @@ protected:
 	void					process_prop_value	(const device::package_t &p);
 
 	void					child_added				(tree_node *p, tree_node *n);
-	void					child_removed			(tree_node *, std::string name);
+	void					child_removed			(tree_node *parent, std::string name, tree_node *);
 	void					process_notification	(const device::package_t *p);
 	void					updated					(property_base *prop);
 	
