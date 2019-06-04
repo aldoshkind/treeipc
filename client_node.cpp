@@ -49,7 +49,10 @@ tree_node *client_node::get(std::string path, bool create)
 	typename tree_node::children_t::size_type child_id = tree_node::find(name);
 	if(child_id == std::numeric_limits<typename tree_node::children_t::size_type>::max())
 	{
-#warning передать create в fetch
+		if(create == false)
+		{
+			return nullptr;
+		}
 		tree_node *n = cl->fetch_node(nid, name);
 		if(n != NULL)
 		{

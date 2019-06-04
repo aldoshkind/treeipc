@@ -62,10 +62,13 @@ client_node *node_sync::fetch_node(nid_t nid, std::string name)
 	}
 
 	cl->set_nid(rep.get_nid());
-	tracked[rep.get_nid()] = cl;
+	//printf("%s: %d %p\n", __func__, (int)rep.get_nid(), cl);
+	do_track(cl, rep.get_nid());
+	//tracked[] = cl;
 	cl->set_client(this);
 
-	return dynamic_cast<client_node *>(tracked[rep.get_nid()]);
+	//return dynamic_cast<client_node *>(tracked[rep.get_nid()]);
+	return cl;
 }
 
 void node_sync::process_package(const package &p)
@@ -79,7 +82,9 @@ void node_sync::process_package(const package &p)
 		n->set_client(this);
 
 		std::lock_guard<decltype(tracked_mutex)> lg(tracked_mutex);
-		tracked[p.get_nid()] = n;
+		//printf("%s: %d %p\n", __func__, (int)p.get_nid(), n);
+		//tracked[p.get_nid()] = n;
+		do_track(n, p.get_nid());
 	}
 	break;
 	case CMD_PROP_VALUE_UPDATED:
@@ -313,7 +318,9 @@ bool node_sync::attach(nid_t nid, const std::string &/*name*/, tree_node *child)
 	}
 	
 	std::lock_guard<decltype(tracked_mutex)> lg(tracked_mutex);	
-	tracked[rep.get_nid()] = child;
+	//printf("%s: %d %p\n", __func__, (int)rep.get_nid(), child);
+	do_track(child, rep.get_nid());
+	//tracked[rep.get_nid()] = child;
 	
 	return true;
 }
@@ -525,7 +532,9 @@ void node_sync::cmd_attach(const device::package_t &p)
 			return;
 		}
 		generated->set_nid(nid);
-		tracked[nid] = generated;
+		//printf("%s: %d %p\n", __func__, (int)nid, generated);
+		//tracked[nid] = generated;
+		do_track(generated, nid);
 		parent->attach(name, generated);
 	}
 
@@ -542,7 +551,7 @@ tree_node *node_sync::get_node(nid_t nid)
 
 void node_sync::child_added(tree_node *p, tree_node *n)
 {
-	printf("child added %s\n", (p->get_path() + n->get_name()).c_str());
+	printf("child added %s\n", (p->get_path() + "/" + n->get_name()).c_str());
 
 	if(dev != NULL)
 	{
@@ -639,14 +648,19 @@ bool node_sync::get_nid(property_base *p, nid_t &nid)
 
 nid_t node_sync::do_track(tree_node *n)
 {
-	nid_t nid = generate_nid();	
+	nid_t nid = generate_nid();
 	return do_track(n, nid);
 }
 
 nid_t node_sync::do_track(tree_node *n, nid_t nid)
 {
 	std::lock_guard<decltype(tracked_mutex)> lg(tracked_mutex);
+	if(tracked.find(nid) != tracked.end())
+	{
+		//printf("%s: already contains %d: %p vs %p\n", __func__, (int)nid, n, tracked[nid]);
+	}
 	tracked[nid] = n;
+	printf("%s: %d %p\n", __func__, (int)nid, n);
 	return nid;
 }
 
