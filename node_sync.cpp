@@ -535,6 +535,7 @@ void node_sync::cmd_attach(const device::package_t &p)
 		//printf("%s: %d %p\n", __func__, (int)nid, generated);
 		//tracked[nid] = generated;
 		do_track(generated, nid);
+		generated->subscribe_add_remove();
 		parent->attach(name, generated);
 	}
 
@@ -714,6 +715,7 @@ void node_sync::cmd_subscribe_add_remove(const device::package_t &p, bool erase)
 		return;
 	}
 	tree_node *nd = it->second;
+//	printf("%s %s\n", __func__, nd->get_name().c_str());
 
 	if(erase == false)
 	{
