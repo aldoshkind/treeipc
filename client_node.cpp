@@ -97,9 +97,29 @@ tree_node *client_node::at(std::string path)
 
 tree_node *client_node::attach(std::string name, tree_node *obj, bool append)
 {
+	if(obj == nullptr)
+	{
+		return nullptr;
+	}
+	
+	auto children = tree_node::get_children();
+	if(std::find(children.begin(), children.end(), obj) != children.end())
+	{
+		printf("%s: %s already has %s as child\n", __func__, get_name().c_str(), obj->get_name().c_str());
+		return obj;
+	}
+	
 	if(cl != nullptr)
 	{
 		auto res = tree_node::attach(name, obj, append);
+		
+		
+		client_node *obj_as_client_node = dynamic_cast<client_node *>(obj);
+		if(obj_as_client_node != nullptr && obj_as_client_node->get_client() == get_client())
+		{
+			return res;
+		}
+		
 		bool ok = cl->attach(nid, name, obj);
 		if(!ok)
 		{

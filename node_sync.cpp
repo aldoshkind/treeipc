@@ -73,7 +73,7 @@ client_node *node_sync::fetch_node(nid_t nid, std::string name)
 
 void node_sync::process_package(const package &p)
 {
-	printf("%s %d\n", __func__, (int)p.get_cmd());
+	//printf("%s %d\n", __func__, (int)p.get_cmd());
 	switch(p.get_cmd())
 	{
 	case CMD_AT_SUCCESS:
@@ -312,10 +312,11 @@ bool node_sync::attach(nid_t nid, const std::string &/*name*/, tree_node *child)
 	append_string(req, type);
 	append_string(req, child->get_name());
 
-	std::lock_guard<decltype(tracked_mutex)> lg(tracked_mutex);	
-	nid_t new_nid = generate_nid();
-	do_track(child, new_nid);
-	req.append(&new_nid, sizeof(new_nid));
+	std::lock_guard<decltype(tracked_mutex)> lg(tracked_mutex);		
+	nid_t child_nid = 0;
+	get_nid(child, child_nid);			// если nid не найден, он будет сгенерирован
+	
+	req.append(&child_nid, sizeof(child_nid));
 	
 	//dev->send(req, rep);
 	dev->write(req);
@@ -576,7 +577,8 @@ void node_sync::child_added(tree_node *p, tree_node *n)
 			return;
 		}
 		
-		nid_t nid = do_track(n);
+		nid_t nid = 0;
+		get_nid(n, nid);			// если nid не найден, он будет сгенерирован
 		
 		device::package_t pack;
 		pack.set_cmd(CMD_CHILD_ADDED);
@@ -756,14 +758,18 @@ void node_sync::cmd_child_added(const device::package_t &p)
 	pos = read_string(p, name, pos);
 	read_string(p, type, pos);
 	
-	client_node *nd = generator.generate(type, name);
-	if(nd == nullptr)
+	tree_node *found_node = get_node(nid);
+	if(found_node == nullptr)
 	{
-		return;
+		client_node *nd = generator.generate(type, name);
+		if(nd == nullptr)
+		{
+			return;
+		}
+		nd->set_nid(nid);
+		do_track(nd, nid);
+		nd->subscribe_add_remove();
+		found_node = nd;
 	}
-	nd->set_nid(nid);
-	do_track(nd, nid);
-	
-	parent->attach(name, nd);
-	nd->subscribe_add_remove();
+	parent->attach(name, found_node);
 }
