@@ -73,6 +73,7 @@ client_node *node_sync::fetch_node(nid_t nid, std::string name)
 
 void node_sync::process_package(const package &p)
 {
+	printf("%s %d\n", __func__, (int)p.get_cmd());
 	switch(p.get_cmd())
 	{
 	case CMD_AT_SUCCESS:
@@ -239,6 +240,7 @@ void node_sync::subscribe(nid_t nid)
 
 void node_sync::subscribe_add_remove(nid_t nid)
 {
+	printf("%s %d %s\n", __func__, (int)nid, tracked[nid]->get_name().c_str());
 	device::package_t req;
 
 	req.set_nid(nid);
@@ -310,16 +312,20 @@ bool node_sync::attach(nid_t nid, const std::string &/*name*/, tree_node *child)
 	append_string(req, type);
 	append_string(req, child->get_name());
 
-	dev->send(req, rep);
+	std::lock_guard<decltype(tracked_mutex)> lg(tracked_mutex);	
+	nid_t new_nid = generate_nid();
+	do_track(child, new_nid);
+	req.append(&new_nid, sizeof(new_nid));
+	
+	//dev->send(req, rep);
+	dev->write(req);
 
-	if(rep.get_cmd() != CMD_SUCCESS)
+	/*if(rep.get_cmd() != CMD_SUCCESS)
 	{
 		return false;
-	}
+	}*/
 	
-	std::lock_guard<decltype(tracked_mutex)> lg(tracked_mutex);	
 	//printf("%s: %d %p\n", __func__, (int)rep.get_nid(), child);
-	do_track(child, rep.get_nid());
 	//tracked[rep.get_nid()] = child;
 	
 	return true;
@@ -516,30 +522,32 @@ void node_sync::cmd_attach(const device::package_t &p)
 		std::string type;
 		std::string name;
 		int pos = read_string(p, type);
-		read_string(p, name, pos);
+		pos = read_string(p, name, pos);
+		nid_t nid;
 		
 		tree_node *parent = it->second;		
 
 		resp.set_cmd(CMD_SUCCESS);
-		nid_t nid = generate_nid();
+		//nid_t nid = generate_nid();
+		nid = p.read<nid_t>(pos);
 		resp.set_nid(nid);
 
 		client_node *generated = generator.generate(type, name);
 		if(generated == nullptr)
 		{
-			resp.set_cmd(CMD_ERROR);
-			dev->reply(p, resp);
+			//resp.set_cmd(CMD_ERROR);
+			//dev->reply(p, resp);
 			return;
 		}
 		generated->set_nid(nid);
 		//printf("%s: %d %p\n", __func__, (int)nid, generated);
 		//tracked[nid] = generated;
 		do_track(generated, nid);
-		generated->subscribe_add_remove();
 		parent->attach(name, generated);
+		generated->subscribe_add_remove();
 	}
 
-	dev->reply(p, resp);
+	//dev->reply(p, resp);
 }
 
 tree_node *node_sync::get_node(nid_t nid)
@@ -708,6 +716,7 @@ nid_t node_sync::generate_nid()
 void node_sync::cmd_subscribe_add_remove(const device::package_t &p, bool erase)
 {
 	const nid_t &nid = p.get_nid();
+	printf("%s %d\n", __func__, (int)nid);
 
 	tracked_t::iterator it = tracked.find(nid);
 	if(it == tracked.end())
@@ -715,7 +724,7 @@ void node_sync::cmd_subscribe_add_remove(const device::package_t &p, bool erase)
 		return;
 	}
 	tree_node *nd = it->second;
-//	printf("%s %s\n", __func__, nd->get_name().c_str());
+	printf("%s %s\n", __func__, nd->get_name().c_str());
 
 	if(erase == false)
 	{
@@ -753,8 +762,8 @@ void node_sync::cmd_child_added(const device::package_t &p)
 		return;
 	}
 	nd->set_nid(nid);
-	nd->subscribe_add_remove();
 	do_track(nd, nid);
 	
 	parent->attach(name, nd);
+	nd->subscribe_add_remove();
 }
