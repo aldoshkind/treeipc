@@ -240,7 +240,7 @@ void node_sync::subscribe(nid_t nid)
 
 void node_sync::subscribe_add_remove(nid_t nid)
 {
-	printf("%s %d %s\n", __func__, (int)nid, tracked[nid]->get_name().c_str());
+	//printf("%s %d %s\n", __func__, (int)nid, tracked[nid]->get_name().c_str());
 	device::package_t req;
 
 	req.set_nid(nid);
@@ -726,7 +726,7 @@ void node_sync::cmd_subscribe_add_remove(const device::package_t &p, bool erase)
 		return;
 	}
 	tree_node *nd = it->second;
-	printf("%s %s\n", __func__, nd->get_name().c_str());
+//	printf("%s %s\n", __func__, nd->get_name().c_str());
 
 	if(erase == false)
 	{
