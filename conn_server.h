@@ -1,7 +1,7 @@
 #pragma once
 
 #include "acceptor.h"
-#include "socket_device.h"
+#include "package_stream.h"
 #include "tree/tree_node.h"
 #include "server.h"
 
@@ -17,7 +17,7 @@ class conn_server : public acceptor::listener
 	class client
 	{
 		socket_client sc;
-		socket_device sd;
+		package_stream sd;
 		treeipc::server srv;
 
 	public:

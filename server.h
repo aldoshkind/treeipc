@@ -16,7 +16,7 @@ class server : public node_sync
 
 public:
 	/*constructor*/			server				();
-	/*constructor*/			server				(device *d);
+	/*constructor*/			server				(package_stream_base *d);
 	/*destructor*/			~server				();
 	
 	void					set_root			(tree_node *root);

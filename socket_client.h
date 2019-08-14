@@ -4,7 +4,7 @@
 #include <boost/bind.hpp>
 
 #include "io_service.h"
-#include "reliable_serial.h"
+#include "reliable_bytestream_base.h"
 
 typedef std::shared_ptr<boost::asio::ip::tcp::socket> socket_sp;
 
@@ -48,7 +48,7 @@ public:
 	}
 };
 
-class socket_client : public reliable_serial, public connector::listener
+class socket_client : public reliable_bytestream_base, public connector::listener
 {
 	socket_sp					socket;
 
@@ -75,4 +75,5 @@ public:
 	size_t						write						(const void *data, size_t size);
 
 	void						set_socket					(socket_sp);
+	void						start						();
 };

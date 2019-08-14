@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tree/tree_node_inherited.h"
-#include "device.h"
+#include "package_stream_base.h"
 #include "package.h"
 
 namespace treeipc

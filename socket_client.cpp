@@ -79,3 +79,8 @@ void socket_client::set_socket(socket_sp s)
 	is_connected = true;
 	start_receive();
 }
+
+void socket_client::start()
+{
+	//
+}

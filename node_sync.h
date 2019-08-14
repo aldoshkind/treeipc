@@ -3,7 +3,7 @@
 #include <mutex>
 #include <thread>
 
-#include "device.h"
+#include "package_stream_base.h"
 #include "package.h"
 #include "client_node_value.h"
 #include "property_serializer.h"
@@ -13,10 +13,10 @@
 namespace treeipc
 {
 
-class node_sync : public device::listener, public tree_node::listener_t, public property_listener
+class node_sync : public package_stream_base::listener, public tree_node::listener_t, public property_listener
 {
 protected:
-	device					*dev;
+	package_stream_base					*dev;
 	tree_node				*root_node;
 	
 	typedef std::map<nid_t, tree_node *>		tracked_t;
@@ -45,21 +45,21 @@ protected:
 
 	bool					get_nid				(property_base *n, nid_t &nid);
 	
-	void					cmd_at				(const device::package_t &p);
-	void					cmd_ls				(const device::package_t &p);
-	void					cmd_get_prop		(const device::package_t &p);
-	void					cmd_subscribe		(const device::package_t &p, bool erase = false);
-	void					cmd_prop_value		(const device::package_t &p);
-	void					cmd_attach			(const device::package_t &p);
-	void					cmd_subscribe_add_remove		(const device::package_t &p, bool erase);
-	void					cmd_child_added		(const device::package_t &p);
+	void					cmd_at				(const package_stream_base::package_t &p);
+	void					cmd_ls				(const package_stream_base::package_t &p);
+	void					cmd_get_prop		(const package_stream_base::package_t &p);
+	void					cmd_subscribe		(const package_stream_base::package_t &p, bool erase = false);
+	void					cmd_prop_value		(const package_stream_base::package_t &p);
+	void					cmd_attach			(const package_stream_base::package_t &p);
+	void					cmd_subscribe_add_remove		(const package_stream_base::package_t &p, bool erase);
+	void					cmd_child_added		(const package_stream_base::package_t &p);
 	
 	bool					get_prop_nid		(const property_base *p, nid_t &nid) const;
-	void					process_prop_value	(const device::package_t &p);
+	void					process_prop_value	(const package_stream_base::package_t &p);
 
 	void					child_added				(tree_node *p, tree_node *n);
 	void					child_removed			(tree_node *parent, std::string name, tree_node *child);
-	void					process_notification	(const device::package_t *p);
+	void					process_notification	(const package_stream_base::package_t *p);
 	void					updated					(property_base *prop);
 	
 	// вынести в класс nid_generator;
@@ -72,7 +72,7 @@ public:
 	
 	bool					is_server = true;
 	
-	virtual void			set_device				(device *d);
+	virtual void			set_device				(package_stream_base *d);
 	void					set_root				(tree_node *root);
 	virtual tree_node		*get_root				();
 
