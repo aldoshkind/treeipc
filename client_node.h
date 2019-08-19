@@ -11,6 +11,7 @@ class node_sync;
 
 class client_node : public tree_node
 {
+public:
 	nid_t					nid;
 
 	nid_t					get_rep;

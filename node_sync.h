@@ -59,6 +59,7 @@ protected:
 
 	void					child_added				(tree_node *p, tree_node *n);
 	void					child_removed			(tree_node *parent, std::string name, tree_node *child);
+	void					on_remove				(tree_node *);
 	void					process_notification	(const package_stream_base::package_t *p);
 	void					updated					(property_base *prop);
 	
@@ -84,6 +85,14 @@ public:
 	void					unsubscribe				(nid_t nid);
 	bool					attach					(nid_t nid, const std::string &name, tree_node *child);
 	void					request_prop_set_value	(const property_base *p, const void *value);
+	
+	void					remove_client_node(nid_t nid);
+	
+private:
+	void stream_closed();
+	void stream_opened();
+	
+	void cleanup_children();
 };
 
 }

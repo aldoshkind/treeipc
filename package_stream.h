@@ -18,9 +18,15 @@
 namespace treeipc
 {
 
-class package_codec : public one_to_one_observable<void, const std::vector<uint8_t> &>, public reliable_bytestream_base::listener
+class package_codec : /*public one_to_one_observable<void, const std::vector<uint8_t> &>, */public reliable_bytestream_base::listener
 {	
+	typedef one_to_one_observable<void, const std::vector<uint8_t> &> base_t;
 public:
+	class listener : public base_t::listener
+	{
+		//
+	};
+	
 	package_codec();
 	~package_codec();
 
@@ -31,29 +37,28 @@ public:
 private:
 	reliable_bytestream_base *transport;
 
-	//package buffer;
 	std::vector<uint8_t> buffer;
 	typedef uint32_t pack_size_t;
 	pack_size_t pack_size;
 	std::recursive_mutex write_lock;
 
 	void process_notification(const void *data, size_t size);
+	virtual void process_notification(const std::vector<uint8_t> &p) = 0;
 };
 
 
 
 
 
-class package_stream : public package_stream_base, public one_to_one_observable<void, const std::vector<uint8_t> &>::listener
+class request_reply_dispatcher : public package_stream_base, public package_codec/*::listener*//*, public reliable_bytestream_base::listener*/
 {
 private:
 	typedef uint16_t msgid_t;
 	
 public:
-	package_stream(reliable_bytestream_base *rs);
-	~package_stream();
+	request_reply_dispatcher(reliable_bytestream_base *rs);
+	~request_reply_dispatcher();
 
-	void process_notification(const std::vector<uint8_t> &p);
 	bool write(const package_t &p, msgid_t msgid);
 	bool write(const package_t &p);
 	bool send(package_t req, package_t &resp);
@@ -61,7 +66,7 @@ public:
 	void start();
 	
 private:
-	package_codec *pc;
+	//package_codec *pc;
 
 	package in;
 	msgid_t msgid = 0;
@@ -84,6 +89,10 @@ private:
 
 	msgid_t generate_msgid();
 	void release_msgid(msgid_t msgid);
+	
+	void bytestream_opened();
+	void bytestream_closed();
+	void process_notification(const std::vector<uint8_t> &p);
 };
 
 }

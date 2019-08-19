@@ -4,11 +4,7 @@ using namespace treeipc;
 
 void client_nonroot::set_root(tree_node *root)
 {
-	nid_t root_nid = do_track(root, 0);
 	node_sync::set_root(root);
-	// запросить подписку на обновления
-	subscribe_add_remove(root_nid);
-	root->add_listener(this, false);
 }
 
 void client_nonroot::child_added(tree_node *p, tree_node *n)
@@ -27,4 +23,17 @@ void client_nonroot::child_added(tree_node *p, tree_node *n)
 	}
 
 	node_sync::child_added(p, n);
+}
+
+void client_nonroot::stream_opened()
+{
+	// запросить подписку на обновления
+	printf("%s\n", __func__);
+	do_track(get_root(), 0);
+	subscribe_add_remove(0);				// 0 это nid для root
+	tree_node *root = get_root();
+	if(root != nullptr)
+	{
+		root->add_listener(this, false);
+	}
 }

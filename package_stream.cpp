@@ -33,7 +33,7 @@ void package_codec::process_notification(const void *data, size_t size)
 		}
 
 		std::vector<uint8_t> result(buffer.begin(), buffer.begin() + pack_size);
-		notify(result);
+		process_notification(result);
 		buffer.erase(buffer.begin(), buffer.begin() + pack_size);
 		pack_size = 0;
 	}
@@ -74,19 +74,21 @@ bool package_codec::write(const std::vector<uint8_t> &p)
 
 
 
-package_stream::package_stream(reliable_bytestream_base *rs) : pc(new package_codec)
+request_reply_dispatcher::request_reply_dispatcher(reliable_bytestream_base *rs)/* : pc(new package_codec)*/
 {
 	generate_msgid();
-	pc->set_listener(this);
+	/*pc->set_listener(this);
 	pc->set_transport(rs);
+	rs->set_listener(this);*/
+	set_transport(rs);
 }
 
-package_stream::~package_stream()
+request_reply_dispatcher::~request_reply_dispatcher()
 {
-	delete pc;
+	//delete pc;
 }
 
-package_stream::msgid_t package_stream::generate_msgid()
+request_reply_dispatcher::msgid_t request_reply_dispatcher::generate_msgid()
 {
 	std::lock_guard<decltype(msgid_released_mutex)> lock(msgid_released_mutex);
 	if(msgid_released.size() > 0)
@@ -98,13 +100,13 @@ package_stream::msgid_t package_stream::generate_msgid()
 	return msgid++;
 }
 
-void package_stream::release_msgid(msgid_t msgid)
+void request_reply_dispatcher::release_msgid(msgid_t msgid)
 {
 	std::lock_guard<decltype(msgid_released_mutex)> lock(msgid_released_mutex);
 	msgid_released.push_back(msgid);
 }
 
-void package_stream::process_notification(const std::vector<uint8_t> &p)
+void request_reply_dispatcher::process_notification(const std::vector<uint8_t> &p)
 {
 	msgid_t msgid = 0;
 	memcpy(&msgid, &(p[0]), sizeof(msgid));
@@ -148,22 +150,22 @@ void package_stream::process_notification(const std::vector<uint8_t> &p)
 	}
 }
 
-bool				package_stream::write				(const package_t &p, msgid_t msgid)
+bool				request_reply_dispatcher::write				(const package_t &p, msgid_t msgid)
 {
 	std::vector<uint8_t> buf;
 
 	buf.insert(buf.end(), (uint8_t *)(&msgid), (uint8_t *)(&msgid) + 2);
 	buf.insert(buf.end(), (uint8_t *)(&(p[0])), (uint8_t *)(&(p[0])) + p.size());
 
-	return pc->write(buf);
+	return /*pc->*/package_codec::write(buf);
 }
 
-bool				package_stream::write				(const package_t &p)
+bool				request_reply_dispatcher::write				(const package_t &p)
 {
 	return write(p, 0);
 }
 
-bool				package_stream::send				(package_t req, package_t &resp)
+bool				request_reply_dispatcher::send				(package_t req, package_t &resp)
 {
 	std::unique_lock<decltype(senders_mutex)> lock(senders_mutex);
 	msgid_t msgid = generate_msgid();
@@ -187,7 +189,7 @@ bool				package_stream::send				(package_t req, package_t &resp)
 	return true;
 }
 
-bool				package_stream::reply				(const package_t *req, const package &reply)
+bool				request_reply_dispatcher::reply				(const package_t *req, const package &reply)
 {
 	std::lock_guard<std::recursive_mutex> request_msgids_lock(request_msgids_mutex);
 	if(request_msgids.find(req) == request_msgids.end())
@@ -216,7 +218,17 @@ bool				package_stream::reply				(const package_t *req, const package &reply)
 	return true;
 }
 
-void package_stream::start()
+void request_reply_dispatcher::start()
 {
-	pc->get_transport()->start();
+	get_transport()->start();
+}
+
+void request_reply_dispatcher::bytestream_opened()
+{
+	notify_stream_opened();
+}
+
+void request_reply_dispatcher::bytestream_closed()
+{
+	notify_stream_closed();
 }

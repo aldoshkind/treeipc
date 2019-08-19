@@ -47,6 +47,11 @@ void socket_client::data_ready(const boost::system::error_code &e, size_t bytes_
 	{
 		printf("%s %s %d\n", __PRETTY_FUNCTION__, e.message().c_str(), socket->is_open());
 		is_connected = false;
+		notify_bytestream_closed();
+		if(conn != nullptr)
+		{
+			conn->reconnect();
+		}
 		return;
 	}
 
@@ -77,10 +82,16 @@ void socket_client::set_socket(socket_sp s)
 	s->set_option(boost::asio::ip::tcp::no_delay(true));
 	socket = s;
 	is_connected = true;
+	notify_bytestream_opened();
 	start_receive();
 }
 
 void socket_client::start()
 {
 	//
+}
+
+void socket_client::set_connector(connector *c)
+{
+	conn = c;
 }

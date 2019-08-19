@@ -93,4 +93,9 @@ public:
 		std::lock_guard<std::mutex> lg(mut);
 		l = nullptr;
 	}
+protected:
+	listener *get_listener()
+	{
+		return l;
+	}
 };

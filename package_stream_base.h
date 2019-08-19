@@ -177,7 +177,15 @@ public:
 
 class package_stream_base : public one_to_one_observable<void, const package *>
 {
+	typedef one_to_one_observable<void, const package *> base_t;
 public:
+	class listener : public base_t::listener
+	{
+	public:
+		virtual void stream_opened() = 0;
+		virtual void stream_closed() = 0;
+	};
+	
 	/*constructor*/			package_stream_base				()
 	{
 		//
@@ -199,6 +207,25 @@ public:
 	}
 
 	virtual void				start				() = 0;												// starts the process of packages acquision
+	
+protected:
+	void notify_stream_opened()
+	{
+		auto l = dynamic_cast<listener *>(get_listener());
+		if(l != nullptr)
+		{
+			l->stream_opened();
+		}
+	}
+	
+	void notify_stream_closed()
+	{
+		auto l = dynamic_cast<listener *>(get_listener());
+		if(l != nullptr)
+		{
+			l->stream_closed();
+		}
+	}
 };
 
 }

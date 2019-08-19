@@ -15,6 +15,7 @@ public:
 	
 private:
 	void					child_added				(tree_node *p, tree_node *n);
+	void stream_opened();
 };
 
 }

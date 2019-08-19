@@ -593,14 +593,20 @@ void node_sync::child_added(tree_node *p, tree_node *n)
 		
 		append_string(pack, n->get_name());
 		append_string(pack, type);
+		pack.append<bool>(n->get_parent() == p);
 
 		dev->write(pack);
 	}
 }
 
-void node_sync::child_removed(tree_node * /*parent*/, std::string /*name*/, tree_node * /*node*/)
+void node_sync::child_removed(tree_node *parent, std::string name, tree_node * /*node*/)
 {
-	//
+	printf("%s: child %s removed from %s\n", __func__, name.c_str(), parent->get_name().c_str());
+}
+
+void node_sync::on_remove(tree_node *n)
+{
+	printf("%s: child %s on removed\n", __func__, n->get_name().c_str());
 }
 
 property_base *node_sync::get_prop(nid_t nid)
@@ -755,7 +761,8 @@ void node_sync::cmd_child_added(const package_stream_base::package_t &p)
 	nid_t nid = p.read<nid_t>(pos);
 	pos += sizeof(nid);
 	pos = read_string(p, name, pos);
-	read_string(p, type, pos);
+	pos = read_string(p, type, pos);
+	bool is_parent = p.read<bool>(pos);
 	
 	tree_node *found_node = get_node(nid);
 	if(found_node == nullptr)
@@ -771,4 +778,69 @@ void node_sync::cmd_child_added(const package_stream_base::package_t &p)
 		found_node = nd;
 	}
 	parent->attach(name, found_node);
+	if(is_parent)
+	{
+		found_node->set_parent(parent);
+	}
+}
+
+void node_sync::stream_opened()
+{
+	printf("%s\n", __func__);
+}
+
+void node_sync::stream_closed()
+{
+	printf("%s\n", __func__);
+	cleanup_children();
+}
+
+void node_sync::cleanup_children()
+{
+	printf("%s\n", __func__);
+	std::unique_lock<decltype(tracked_mutex)> lock(tracked_mutex);
+	
+	//for(tracked_t::iterator it = tracked.begin() ; it != tracked.end() ; it++)
+	for( ; tracked.size() != 0 ; )
+	{
+		printf("%s: start\n", __func__);
+		tree_node *n = tracked.begin()->second;
+		printf("%s: start %s\n", __func__, n->get_name().c_str());
+		
+		if(n == get_root())
+		{
+			printf("%s: continue %s\n", __func__, n->get_name().c_str());
+			tracked.erase(tracked.begin());
+			continue;
+		}
+		
+		tree_node *parent = const_cast<tree_node *>(n->get_parent());
+		if(parent != nullptr)
+		{
+			printf("%s: detaching %s from parent %s\n", __func__, n->get_name().c_str(), parent->get_name().c_str());
+			parent->detach(n);
+		}
+		printf("%s: deleting %s\n", __func__, n->get_name().c_str());
+
+		client_node *cn = dynamic_cast<client_node *>(n);
+		if(cn != nullptr && cn->get_client() == this)
+		{
+			lock.unlock();
+			printf("%s: delete %d %p\n", __func__, cn->nid, cn);
+			delete cn;
+			lock.lock();
+		}
+		else
+		{
+			tracked.erase(tracked.begin());
+		}
+		printf("%s: end %s\n", __func__, n->get_name().c_str());
+	}
+}
+
+void node_sync::remove_client_node(nid_t nid)
+{
+	std::unique_lock<decltype(tracked_mutex)> lock(tracked_mutex);
+	printf("%s: delete %d %p. tracked now is of size %d\n", __func__, nid, tracked[nid], tracked.size() - 1);
+	tracked.erase(nid);
 }

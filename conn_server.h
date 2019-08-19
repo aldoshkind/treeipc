@@ -17,7 +17,7 @@ class conn_server : public acceptor::listener
 	class client
 	{
 		socket_client sc;
-		package_stream sd;
+		request_reply_dispatcher sd;
 		treeipc::server srv;
 
 	public:

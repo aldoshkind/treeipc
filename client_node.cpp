@@ -12,7 +12,10 @@ using namespace treeipc;
 
 /*destructor*/ client_node::~client_node()
 {
-	//
+	if(cl != nullptr)
+	{
+		cl->remove_client_node(nid);
+	}
 }
 
 void client_node::set_client(node_sync *c)
