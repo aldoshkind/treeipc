@@ -192,8 +192,16 @@ client_node::ls_list_t node_sync::ls(nid_t nid)
 
 void node_sync::update_prop(nid_t nid)
 {
-	std::unique_lock<decltype(tracked_mutex)> lock(tracked_mutex);
+	{
+		std::unique_lock<decltype(update_in_process_mutex)> lock(update_in_process_mutex);
+		if(update_in_process == true)
+		{
+			return;
+		}
+	}
 	
+	std::unique_lock<decltype(tracked_mutex)> lock(tracked_mutex);
+		
 	tracked_t::iterator it = tracked.find(nid);
 	if(it == tracked.end())
 	{
@@ -221,9 +229,12 @@ void node_sync::update_prop(nid_t nid)
 	buf.resize(sz);
 	rep.read(sizeof(sz), &(buf[0]), sz);
 
+	std::unique_lock<decltype(update_in_process_mutex)> update_lock(update_in_process_mutex);
+	update_in_process = true;
 	pvf->set_deserialization(true);
 	serializer.deserialize(buf, prop);
 	pvf->set_deserialization(false);
+	update_in_process = false;
 
 	return;
 }
@@ -355,10 +366,13 @@ void node_sync::process_prop_value(const package_stream_base::package_t &p)
 	buf.resize(sz);
 	p.read(sizeof(sz), &(buf[0]), sz);
 
+	std::unique_lock<decltype(update_in_process_mutex)> update_lock(update_in_process_mutex);
+	update_in_process = true;
 	pvf->set_deserialization(true);
 	serializer.deserialize(buf, prop);
 	prop->notify_change();
 	pvf->set_deserialization(false);
+	update_in_process = false;
 }
 
 
@@ -502,7 +516,10 @@ void node_sync::cmd_prop_value(const package_stream_base::package_t &p)
 	buf.resize(p.data_size());
 	p.read(0, &(buf[0]), buf.size());
 
+	std::unique_lock<decltype(update_in_process_mutex)> update_lock(update_in_process_mutex);
+	update_in_process = true;
 	serializer.deserialize(buf, pb);
+	update_in_process = false;
 	pb->notify_change();
 }
 

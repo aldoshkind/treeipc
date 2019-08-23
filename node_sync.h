@@ -27,6 +27,9 @@ protected:
 	std::thread				package_processing_thread;
 	bool					package_processing_thread_run = false;
 	
+	bool					update_in_process = false;
+	std::recursive_mutex	update_in_process_mutex;
+	
 	void					package_processing_routine		();
 	void					process_package					(const package &p);
 	
