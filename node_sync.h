@@ -80,7 +80,7 @@ public:
 	void					set_root				(tree_node *root);
 	virtual tree_node		*get_root				();
 
-	client_node::ls_list_t	ls						(nid_t nid);
+	client_node::string_list_t	ls						(nid_t nid);
 	client_node				*fetch_node				(nid_t nid, std::string name);	
 	void					update_prop				(nid_t nid);
 	void					subscribe				(nid_t nid);

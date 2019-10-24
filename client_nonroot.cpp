@@ -7,18 +7,18 @@ void client_nonroot::set_root(tree_node *root)
 	node_sync::set_root(root);
 }
 
-void client_nonroot::child_added(tree_node *p, tree_node *n)
+void client_nonroot::child_added(tree_node *p, const std::string &name, tree_node *n)
 {
 	client_node *cn = dynamic_cast<client_node *>(n);
 	if(cn != nullptr && cn->get_client() == this)
 	{
-		printf("child rejected %s\n", n->get_name().c_str());
+		printf("child rejected %s\n", name.c_str());
 		return;
 	}
 	
 	if(n->get_parent() == get_root())
 	{
-		printf("child rejected %s\n", n->get_name().c_str());
+		printf("child rejected %s\n", name.c_str());
 		return;
 	}
 

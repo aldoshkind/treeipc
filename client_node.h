@@ -30,7 +30,7 @@ public:
 	virtual void			set_nid					(nid_t nid);
 	node_sync				*get_client				();
 
-	tree_node::ls_list_t	ls						() const;
+	tree_node::string_list_t	ls						() const;
 
 	tree_node				*at						(std::string path);
 	void					subscribe_add_remove	();

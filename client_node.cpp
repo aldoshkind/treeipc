@@ -49,8 +49,7 @@ tree_node *client_node::get(std::string path, bool create)
 	std::string name, rest_of_path;
 	extract_next_level_name(path, name, rest_of_path);
 
-	typename tree_node::children_t::size_type child_id = tree_node::find(name);
-	if(child_id == std::numeric_limits<typename tree_node::children_t::size_type>::max())
+	if(children_map.find(name) == children_map.end())
 	{
 		if(create == false)
 		{
@@ -59,29 +58,33 @@ tree_node *client_node::get(std::string path, bool create)
 		tree_node *n = cl->fetch_node(nid, name);
 		if(n != NULL)
 		{
-			child_id = tree_node::insert(name, n);
+			bool ok = tree_node::insert(name, n, true);
+			if(ok == false)
+			{
+				return nullptr;
+			}
 		}
 		else
 		{
-			return NULL;
+			return nullptr;
 		}
 	}
 
-	auto cn = tree_node::get_children()[child_id];
+	auto cn = tree_node::get_children()[name];
 
-	if(cn == NULL)
+	if(cn == nullptr)
 	{
-		return NULL;
+		return nullptr;
 	}
 
 	return cn->get(rest_of_path, create);
 }
 
-tree_node::ls_list_t client_node::ls() const
+tree_node::string_list_t client_node::ls() const
 {
 	if(cl == NULL)
 	{
-		return tree_node::ls_list_t();
+		return tree_node::string_list_t();
 	}
 
 	return cl->ls(nid);
@@ -106,7 +109,7 @@ tree_node *client_node::attach(std::string name, tree_node *obj, bool append)
 	}
 	
 	auto children = tree_node::get_children();
-	if(std::find(children.begin(), children.end(), obj) != children.end())
+	if(children.find(name) != children.end())
 	{
 		printf("%s: %s already has %s as child\n", __func__, get_name().c_str(), obj->get_name().c_str());
 		return obj;

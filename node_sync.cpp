@@ -160,7 +160,7 @@ void node_sync::process_notification(const package_stream_base::package_t *p)
 	return;
 }
 
-client_node::ls_list_t node_sync::ls(nid_t nid)
+client_node::string_list_t node_sync::ls(nid_t nid)
 {
 	package_stream_base::package_t req;
 	req.set_cmd(CMD_LS);
@@ -171,15 +171,14 @@ client_node::ls_list_t node_sync::ls(nid_t nid)
 
 	if(rep.get_cmd() != CMD_LS_SUCCESS)
 	{
-		return client_node::ls_list_t();
+		return client_node::string_list_t();
 	}
 
-	client_node::ls_list_t res;
+	client_node::string_list_t res;
 
 	int pos = 0;
 	uint32_t count = rep.read<uint32_t>(pos);
 	pos += sizeof(uint32_t);
-	res.reserve(count);
 	for(uint32_t i = 0 ; i < count ; i += 1)
 	{
 		std::string name;
@@ -388,7 +387,7 @@ void node_sync::cmd_ls(const package_stream_base::package_t &p)
 	}
 	else
 	{
-		tree_node::ls_list_t list = t->ls();
+		tree_node::string_list_t list = t->ls();
 
 		resp.set_cmd(CMD_LS_SUCCESS);
 		resp.set_nid(nid);
