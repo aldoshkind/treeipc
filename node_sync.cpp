@@ -842,7 +842,7 @@ void node_sync::cleanup_children()
 		if(cn != nullptr && cn->get_client() == this)
 		{
 			lock.unlock();
-			printf("%s: delete %d %p\n", __func__, cn->nid, cn);
+			printf("%s: delete %d %p\n", __func__, (int)cn->nid, cn);
 			delete cn;
 			lock.lock();
 		}
@@ -857,6 +857,6 @@ void node_sync::cleanup_children()
 void node_sync::remove_client_node(nid_t nid)
 {
 	std::unique_lock<decltype(tracked_mutex)> lock(tracked_mutex);
-	printf("%s: delete %d %p. tracked now is of size %d\n", __func__, nid, tracked[nid], tracked.size() - 1);
+	printf("%s: delete %d %p. tracked now is of size %d\n", __func__, (int)nid, tracked[nid], (int)tracked.size() - 1);
 	tracked.erase(nid);
 }
