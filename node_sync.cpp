@@ -609,7 +609,7 @@ void node_sync::child_added(tree_node *p, tree_node *n)
 		
 		append_string(pack, n->get_name());
 		append_string(pack, type);
-		pack.append<bool>(n->get_parent() == p);
+		pack.append<bool>(n->get_owner() == p);
 
 		dev->write(pack);
 	}
@@ -796,7 +796,7 @@ void node_sync::cmd_child_added(const package_stream_base::package_t &p)
 	parent->attach(name, found_node);
 	if(is_parent)
 	{
-		found_node->set_parent(parent);
+		found_node->set_owner(parent);
 	}
 }
 
@@ -830,7 +830,7 @@ void node_sync::cleanup_children()
 			continue;
 		}
 		
-		tree_node *parent = const_cast<tree_node *>(n->get_parent());
+		tree_node *parent = const_cast<tree_node *>(n->get_owner());
 		if(parent != nullptr)
 		{
 			printf("%s: detaching %s from parent %s\n", __func__, n->get_name().c_str(), parent->get_name().c_str());

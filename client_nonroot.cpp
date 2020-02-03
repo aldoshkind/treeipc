@@ -16,7 +16,7 @@ void client_nonroot::child_added(tree_node *p, const std::string &name, tree_nod
 		return;
 	}
 	
-	if(n->get_parent() == get_root())
+	if(n->get_owner() == get_root())
 	{
 		printf("child rejected %s\n", name.c_str());
 		return;

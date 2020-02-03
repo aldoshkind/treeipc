@@ -396,7 +396,6 @@ public:
 
 	bool						deserialize					(const serializer_base::buffer_t &buf, property_base *c)
 	{
-#warning
 		std::unique_lock<decltype(serializers_mutex)> lock(serializers_mutex);
 		
 		serializers_t::iterator it = serializers.find(c->get_type());
@@ -411,7 +410,6 @@ public:
 	template <class type>
 	bool						deserialize					(const serializer_base::buffer_t &buf, type &c)
 	{
-#warning
 		std::unique_lock<decltype(serializers_mutex)> lock(serializers_mutex);
 		
 		serializers_t::iterator it = serializers.find(typeid(type).name());
