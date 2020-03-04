@@ -13,7 +13,7 @@
 namespace treeipc
 {
 
-class node_sync : public package_stream_base::listener, public tree_node::listener_t, public property_listener
+class node_sync : public package_stream_base::listener, public tree_node_listener, public property_listener
 {
 protected:
 	package_stream_base					*dev;
