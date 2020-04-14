@@ -1,5 +1,7 @@
 #include "node_sync.h"
 
+#include <functional>
+
 #include "client_node.h"
 #include "property_fake.h"
 
